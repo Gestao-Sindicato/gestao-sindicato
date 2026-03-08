@@ -35,7 +35,6 @@
             serverTimestamp 
         } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js';
         
-        // Expor para o escopo global
         window.firebaseApp = initializeApp({
             apiKey: "AIzaSyDkswcMCBewnB6kw2qdLPzK57RNISWfBM8",
             authDomain: "gestao-sindicato-72678.firebaseapp.com",
@@ -162,7 +161,6 @@
         .status-fechado { @apply bg-amber-500/10 text-amber-400 border border-amber-500/20; }
         .status-pago { @apply bg-blue-500/10 text-blue-400 border border-blue-500/20; }
         
-        /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -405,6 +403,15 @@
                                 <input type="text" id="assocRegistro" required class="w-full px-4 py-2 rounded-lg input-field text-white">
                             </div>
                             <div>
+                                <label class="block text-sm text-slate-400 mb-1">Turno Padrão</label>
+                                <select id="assocTurnoPadrao" required class="w-full px-4 py-2 rounded-lg input-field text-white bg-slate-900">
+                                    <option value="07x15">07x15 (Manhã)</option>
+                                    <option value="15x23">15x23 (Tarde/Noite)</option>
+                                    <option value="23x07">23x07 (Madrugada)</option>
+                                    <option value="folguista">Sem turno fixo / Folguista</option>
+                                </select>
+                            </div>
+                            <div>
                                 <label class="block text-sm text-slate-400 mb-1">Telefone (WhatsApp)</label>
                                 <input type="tel" id="assocTelefone" placeholder="5511999999999" class="w-full px-4 py-2 rounded-lg input-field text-white">
                                 <span class="text-xs text-slate-500 mt-1 block">Formato: 55 + DDD + Número</span>
@@ -426,6 +433,7 @@
                                     <tr>
                                         <th class="px-4 py-3 rounded-l-lg">Registro</th>
                                         <th class="px-4 py-3">Nome</th>
+                                        <th class="px-4 py-3">Turno</th>
                                         <th class="px-4 py-3">Telefone</th>
                                         <th class="px-4 py-3">Saldo</th>
                                         <th class="px-4 py-3 rounded-r-lg text-right">Ações</th>
@@ -443,7 +451,7 @@
             <!-- Seção Lançamentos -->
             <section id="section-lancamentos" class="section hidden fade-in space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Vale (Débito) -->
+                    <!-- Vale (Débito) - Agora vai para valesPendentes -->
                     <div class="glass-card rounded-2xl p-6 border-l-4 border-red-500">
                         <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                             <i class="ph ph-minus-circle text-red-400"></i>
@@ -464,8 +472,12 @@
                                 <label class="block text-sm text-slate-400 mb-1">Motivo/Observação</label>
                                 <input type="text" id="valeDescricao" placeholder="Ex: Adiantamento quinzenal" class="w-full px-4 py-2 rounded-lg input-field text-white">
                             </div>
+                            <div class="text-xs text-amber-400/80 bg-amber-400/10 p-3 rounded-lg border border-amber-400/20">
+                                <i class="ph ph-info mr-1"></i>
+                                O vale será registrado como pendente e descontado no próximo pagamento de navio.
+                            </div>
                             <button type="submit" class="w-full py-2 rounded-lg bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 font-semibold transition-colors">
-                                Registrar Débito (Vale)
+                                Registrar Vale Pendente
                             </button>
                         </form>
                     </div>
@@ -707,7 +719,7 @@
 
                 <div>
                     <label class="block text-sm text-slate-400 mb-1">Turno</label>
-                    <select id="turnoPeriodo" required class="w-full px-4 py-2 rounded-lg input-field text-white bg-slate-900" onchange="toggleCampos15x23()">
+                    <select id="turnoPeriodo" required class="w-full px-4 py-2 rounded-lg input-field text-white bg-slate-900" onchange="onTurnoChange()">
                         <option value="">Selecione...</option>
                         <option value="07x15">07x15 (Manhã)</option>
                         <option value="15x23">15x23 (Tarde/Noite)</option>
@@ -736,10 +748,19 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm text-slate-400 mb-2">Selecionar Equipe</label>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm text-slate-400">Selecionar Equipe</label>
+                        <span id="badgeFiltroTurno" class="hidden text-xs px-2 py-1 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+                            Filtrado por turno
+                        </span>
+                    </div>
                     <div id="listaConferentesTurno" class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 rounded-lg bg-slate-900/50 border border-slate-700">
                         <!-- Checkboxes via JS -->
                     </div>
+                    <button type="button" id="btnMostrarTodosTurno" onclick="toggleMostrarTodosConferentes()" class="hidden mt-2 text-xs text-slate-400 hover:text-gold-400 flex items-center gap-1 transition-colors">
+                        <i class="ph ph-eye"></i>
+                        Mostrar conferentes de outros turnos (Exceção/Folga)
+                    </button>
                 </div>
 
                 <!-- Preview de Cálculo -->
@@ -768,6 +789,38 @@
                     <button type="submit" class="flex-1 py-2 rounded-lg btn-primary text-slate-900 font-semibold">Adicionar Turno</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal de Autorização de Pagamento (Novo) -->
+    <div id="modalAutorizarPagamento" class="fixed inset-0 z-50 hidden bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-panel rounded-2xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-xl font-bold text-white">Autorizar Pagamento</h3>
+                    <p class="text-sm text-slate-400 mt-1">Configure os descontos de vale para cada conferente</p>
+                </div>
+                <button onclick="fecharModal('modalAutorizarPagamento')" class="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            
+            <div id="conteudoAutorizacao" class="space-y-4">
+                <!-- Lista de associados será inserida aqui -->
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-slate-700 flex justify-between items-center">
+                <div class="text-sm text-slate-400">
+                    Total a Pagar: <span id="totalPagamento" class="text-white font-mono font-bold">R$ 0,00</span>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="fecharModal('modalAutorizarPagamento')" class="px-6 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-700 transition-colors">Cancelar</button>
+                    <button onclick="confirmarPagamentoComDescontos()" class="px-6 py-2 rounded-lg btn-primary text-slate-900 font-semibold flex items-center gap-2">
+                        <i class="ph ph-check"></i>
+                        Confirmar Pagamento
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -814,7 +867,9 @@
             },
             associados: [],
             navios: [],
-            filtroNavios: 'todos'
+            filtroNavios: 'todos',
+            mostrarTodosConferentes: false,
+            navioPagamentoAtual: null // Guarda o navio sendo processado no modal de pagamento
         };
 
         let unsubscribeNavios = null;
@@ -840,16 +895,18 @@
         }
 
         function setupListeners() {
-            // Listener de associados
             const q = window.query(window.collection(window.db, 'associados'), window.orderBy('nome'));
             unsubscribeAssociados = window.onSnapshot(q, (snapshot) => {
-                state.associados = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                state.associados = snapshot.docs.map(doc => ({ 
+                    id: doc.id, 
+                    ...doc.data(),
+                    valesPendentes: doc.data().valesPendentes || 0 // Garantir campo existe
+                }));
                 renderAssociados();
                 updateSelectsAssociados();
                 updateDashboard();
             });
 
-            // Listener de navios
             const qNavios = window.query(window.collection(window.db, 'navios'), window.orderBy('createdAt', 'desc'));
             unsubscribeNavios = window.onSnapshot(qNavios, (snapshot) => {
                 state.navios = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -869,7 +926,6 @@
                     state.config = { ...state.config, ...data };
                     updateConfigInputs();
                 } else {
-                    // Criar config padrão
                     await window.setDoc(configRef, state.config);
                 }
             } catch (error) {
@@ -880,7 +936,6 @@
         function updateConfigInputs() {
             const cfg = state.config;
             
-            // Preencher inputs
             document.getElementById('taxa_07x15_normal').value = cfg.taxas['07x15'].normal;
             document.getElementById('taxa_07x15_feriado').value = cfg.taxas['07x15'].feriado;
             
@@ -898,7 +953,6 @@
             document.getElementById('api_key').value = cfg.api_key || '';
             document.getElementById('telefone_padrao').value = cfg.telefone_padrao || '';
             
-            // Atualizar previews
             document.getElementById('dashTaxaDesconto').textContent = cfg.desconto_sindical + '%';
             document.getElementById('previewDesconto').textContent = cfg.desconto_sindical;
             document.getElementById('vistoriaValor').value = cfg.valor_vistoria;
@@ -971,12 +1025,13 @@
             renderNavios();
         };
 
-        // Associados
+        // Associados - Atualizado com Turno Padrão
         document.getElementById('formAssociado').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const nome = document.getElementById('assocNome').value.trim();
             const registro = document.getElementById('assocRegistro').value.trim();
+            const turnoPadrao = document.getElementById('assocTurnoPadrao').value;
             const telefone = document.getElementById('assocTelefone').value.trim();
             
             if (!nome || !registro) return;
@@ -985,8 +1040,10 @@
                 await window.addDoc(window.collection(window.db, 'associados'), {
                     nome,
                     registro,
+                    turnoPadrao,
                     telefone,
                     saldo: 0,
+                    valesPendentes: 0, // Novo campo
                     createdAt: new Date().toISOString()
                 });
                 
@@ -1003,16 +1060,29 @@
             tbody.innerHTML = '';
             
             state.associados.forEach(assoc => {
+                const turnoLabel = {
+                    '07x15': 'Manhã',
+                    '15x23': 'Tarde/Noite',
+                    '23x07': 'Madrugada',
+                    'folguista': 'Folguista'
+                }[assoc.turnoPadrao] || assoc.turnoPadrao;
+                
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-slate-800/30 transition-colors';
                 tr.innerHTML = `
                     <td class="px-4 py-3 font-mono text-cyan-400">${assoc.registro}</td>
                     <td class="px-4 py-3 font-medium text-white">${assoc.nome}</td>
+                    <td class="px-4 py-3">
+                        <span class="text-xs px-2 py-1 rounded-full bg-slate-700 text-slate-300 border border-slate-600">
+                            ${turnoLabel}
+                        </span>
+                    </td>
                     <td class="px-4 py-3 text-slate-400 text-sm">${assoc.telefone || '-'}</td>
                     <td class="px-4 py-3 font-mono font-bold ${assoc.saldo >= 0 ? 'text-emerald-400' : 'text-red-400'}">
                         R$ ${(assoc.saldo || 0).toFixed(2)}
                     </td>
                     <td class="px-4 py-3 text-right">
+                        ${assoc.valesPendentes > 0 ? `<span class="text-xs text-amber-400 mr-2" title="Vales pendentes">(V: R$ ${assoc.valesPendentes.toFixed(2)})</span>` : ''}
                         <button onclick="deleteAssociado('${assoc.id}')" class="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">
                             <i class="ph ph-trash"></i>
                         </button>
@@ -1032,7 +1102,8 @@
                 const currentVal = select.value;
                 select.innerHTML = '<option value="">Selecione...</option>';
                 state.associados.forEach(assoc => {
-                    select.innerHTML += `<option value="${assoc.id}">${assoc.nome} (${assoc.registro})</option>`;
+                    const infoVale = assoc.valesPendentes > 0 ? ` [Vale: R$ ${assoc.valesPendentes.toFixed(2)}]` : '';
+                    select.innerHTML += `<option value="${assoc.id}">${assoc.nome} (${assoc.registro})${infoVale}</option>`;
                 });
                 select.value = currentVal;
             });
@@ -1047,7 +1118,7 @@
             }
         };
 
-        // Lançamentos (Vales e Vistorias) - Corrigido com preventDefault
+        // Lançamentos - Vales agora vão para valesPendentes, não saldo
         document.getElementById('formVale').addEventListener('submit', async (e) => {
             e.preventDefault();
             await processarLancamento('vale');
@@ -1076,22 +1147,31 @@
                     associadoId,
                     valor,
                     descricao,
+                    status: isVale ? 'pendente' : 'creditado', // Status para rastreamento
                     createdAt: new Date().toISOString()
                 });
                 
-                // Atualizar saldo IMEDIATAMENTE (diferente dos navios)
                 const assocRef = window.doc(window.db, 'associados', associadoId);
                 const assoc = state.associados.find(a => a.id === associadoId);
-                const saldoAtual = assoc ? assoc.saldo : 0;
-                const novoSaldo = isVale ? saldoAtual - valor : saldoAtual + valor;
                 
-                await window.updateDoc(assocRef, { saldo: novoSaldo });
+                if (isVale) {
+                    // Vale: Adiciona a valesPendentes (não subtrai do saldo ainda)
+                    const valesAtuais = assoc ? (assoc.valesPendentes || 0) : 0;
+                    await window.updateDoc(assocRef, { 
+                        valesPendentes: valesAtuais + valor 
+                    });
+                } else {
+                    // Vistoria: Crédito imediato no saldo
+                    const saldoAtual = assoc ? assoc.saldo : 0;
+                    await window.updateDoc(assocRef, { 
+                        saldo: saldoAtual + valor 
+                    });
+                }
                 
-                // Limpar form
                 document.getElementById(isVale ? 'formVale' : 'formVistoria').reset();
-                document.getElementById('vistoriaValor').value = state.config.valor_vistoria;
+                if (!isVale) document.getElementById('vistoriaValor').value = state.config.valor_vistoria;
                 
-                alert(`✅ ${isVale ? 'Vale' : 'Vistoria'} registrado com sucesso!`);
+                alert(`✅ ${isVale ? 'Vale registrado como pendente' : 'Vistoria creditada'} com sucesso!`);
                 await loadLancamentos();
             } catch (error) {
                 alert('❌ Erro ao registrar lançamento');
@@ -1115,21 +1195,21 @@
                 tr.innerHTML = `
                     <td class="px-4 py-3 text-slate-400 text-sm">${data}</td>
                     <td class="px-4 py-3">
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${isVale ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400'}">
-                            ${isVale ? 'VALE' : 'VISTORIA'}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${isVale ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'}">
+                            ${isVale ? 'VALE PENDENTE' : 'VISTORIA'}
                         </span>
                     </td>
                     <td class="px-4 py-3 text-white">${assoc ? assoc.nome : 'Desconhecido'}</td>
                     <td class="px-4 py-3 text-slate-400 text-sm">${lanc.descricao || '-'}</td>
-                    <td class="px-4 py-3 text-right font-mono font-bold ${isVale ? 'text-red-400' : 'text-emerald-400'}">
-                        ${isVale ? '-' : '+'} R$ ${lanc.valor.toFixed(2)}
+                    <td class="px-4 py-3 text-right font-mono font-bold ${isVale ? 'text-amber-400' : 'text-emerald-400'}">
+                        ${isVale ? '' : '+'} R$ ${lanc.valor.toFixed(2)}
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
-        // Navios - Novo Fluxo (3 Fases)
+        // Navios - Novo Fluxo com Filtro Inteligente
         window.abrirModalNovoNavio = () => {
             document.getElementById('modalNovoNavio').classList.remove('hidden');
             document.getElementById('novoNavioNome').focus();
@@ -1151,6 +1231,7 @@
                     turnos: [],
                     totalBruto: 0,
                     totalLiquido: 0,
+                    descontosAplicados: {}, // Para guardar descontos de vale no pagamento
                     createdAt: new Date().toISOString()
                 });
                 
@@ -1188,6 +1269,42 @@
                 const statusText = navio.status === 'aberto' ? 'Em Aberto' : 
                                   navio.status === 'fechado' ? 'Aguardando Pagamento' : 'Pago';
                 
+                // Botões baseados no status
+                let botoes = '';
+                
+                if (navio.status === 'aberto') {
+                    botoes = `
+                        <button onclick="abrirModalTurno('${navio.id}')" class="flex-1 py-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 text-sm font-medium">
+                            + Turno
+                        </button>
+                        <button onclick="fecharNavio('${navio.id}')" class="flex-1 py-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 text-sm font-medium">
+                            Fechar
+                        </button>
+                    `;
+                } else if (navio.status === 'fechado') {
+                    botoes = `
+                        <button onclick="abrirModalAutorizacao('${navio.id}')" class="flex-1 py-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20 text-sm font-medium">
+                            Autorizar Pagamento
+                        </button>
+                        <button onclick="reabrirNavio('${navio.id}')" class="px-3 py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm" title="Reabrir para edição">
+                            <i class="ph ph-arrow-counter-clockwise"></i>
+                        </button>
+                        <button onclick="verDetalhesNavio('${navio.id}')" class="px-3 py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm">
+                            <i class="ph ph-file-text"></i>
+                        </button>
+                    `;
+                } else if (navio.status === 'pago') {
+                    botoes = `
+                        <button onclick="enviarWhatsappNavio('${navio.id}')" class="flex-1 py-2 rounded-lg bg-green-500/10 text-green-400 border border-green-500/30 hover:bg-green-500/20 text-sm font-medium flex items-center justify-center gap-2">
+                            <i class="ph ph-whatsapp-logo"></i>
+                            Notificar
+                        </button>
+                        <button onclick="verDetalhesNavio('${navio.id}')" class="px-3 py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm">
+                            <i class="ph ph-file-text"></i>
+                        </button>
+                    `;
+                }
+                
                 card.innerHTML = `
                     <div class="flex items-start justify-between mb-4">
                         <div>
@@ -1213,62 +1330,104 @@
                     </div>
                     
                     <div class="flex flex-wrap gap-2">
-                        ${navio.status === 'aberto' ? `
-                            <button onclick="abrirModalTurno('${navio.id}')" class="flex-1 py-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 text-sm font-medium">
-                                + Turno
-                            </button>
-                            <button onclick="fecharNavio('${navio.id}')" class="flex-1 py-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 text-sm font-medium">
-                                Fechar
-                            </button>
-                        ` : ''}
-                        
-                        ${navio.status === 'fechado' ? `
-                            <button onclick="autorizarPagamento('${navio.id}')" class="flex-1 py-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20 text-sm font-medium">
-                                Autorizar Pagamento
-                            </button>
-                            <button onclick="verDetalhesNavio('${navio.id}')" class="px-3 py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm">
-                                <i class="ph ph-file-text"></i>
-                            </button>
-                        ` : ''}
-                        
-                        ${navio.status === 'pago' ? `
-                            <button onclick="enviarWhatsappNavio('${navio.id}')" class="flex-1 py-2 rounded-lg bg-green-500/10 text-green-400 border border-green-500/30 hover:bg-green-500/20 text-sm font-medium flex items-center justify-center gap-2">
-                                <i class="ph ph-whatsapp-logo"></i>
-                                Notificar
-                            </button>
-                            <button onclick="verDetalhesNavio('${navio.id}')" class="px-3 py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm">
-                                <i class="ph ph-file-text"></i>
-                            </button>
-                        ` : ''}
+                        ${botoes}
                     </div>
                 `;
                 container.appendChild(card);
             });
         }
 
-        // Turnos
+        // Turnos com Filtro Inteligente
         window.abrirModalTurno = (navioId) => {
             document.getElementById('turnoNavioId').value = navioId;
             document.getElementById('modalTurno').classList.remove('hidden');
             
-            // Renderizar lista de conferentes
+            // Resetar estado
+            state.mostrarTodosConferentes = false;
+            document.getElementById('btnMostrarTodosTurno').classList.remove('hidden');
+            document.getElementById('badgeFiltroTurno').classList.add('hidden');
+            
+            // Renderizar lista (será filtrada pelo onTurnoChange)
+            renderListaConferentesTurno();
+            
+            toggleCampos15x23();
+        };
+
+        function renderListaConferentesTurno(filtrarPorTurno = null) {
             const container = document.getElementById('listaConferentesTurno');
             container.innerHTML = '';
             
+            const turnoSelecionado = filtrarPorTurno || document.getElementById('turnoPeriodo').value;
+            
             state.associados.forEach(assoc => {
+                // Lógica de filtro
+                let deveMostrar = true;
+                let isMatch = false;
+                
+                if (turnoSelecionado && !state.mostrarTodosConferentes) {
+                    if (assoc.turnoPadrao === turnoSelecionado) {
+                        isMatch = true;
+                    } else if (assoc.turnoPadrao === 'folguista') {
+                        isMatch = true; // Folguistas aparecem em todos
+                    } else {
+                        deveMostrar = false;
+                    }
+                }
+                
+                if (!deveMostrar) return;
+                
                 const div = document.createElement('label');
-                div.className = 'flex items-center gap-3 p-3 rounded-lg bg-slate-800 cursor-pointer hover:bg-slate-700 transition-colors';
+                div.className = `flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${isMatch ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-slate-800 hover:bg-slate-700 border border-transparent'}`;
                 div.innerHTML = `
                     <input type="checkbox" name="conferenteTurno" value="${assoc.id}" onchange="atualizarPreviewTurno()" class="w-4 h-4 rounded border-slate-600 text-gold-400 focus:ring-gold-400 bg-slate-700">
-                    <div>
+                    <div class="flex-1">
                         <div class="text-sm font-medium text-white">${assoc.nome}</div>
-                        <div class="text-xs text-slate-400">${assoc.registro}</div>
+                        <div class="text-xs ${assoc.turnoPadrao === 'folguista' ? 'text-amber-400' : 'text-slate-400'}">
+                            ${assoc.turnoPadrao === 'folguista' ? 'Folguista' : 'Turno: ' + assoc.turnoPadrao}
+                        </div>
                     </div>
                 `;
                 container.appendChild(div);
             });
             
+            if (container.children.length === 0) {
+                container.innerHTML = '<div class="col-span-2 text-center py-4 text-slate-500 text-sm">Nenhum conferente encontrado para este turno</div>';
+            }
+        }
+
+        window.onTurnoChange = () => {
+            const turno = document.getElementById('turnoPeriodo').value;
             toggleCampos15x23();
+            
+            // Aplicar filtro se tiver turno selecionado
+            if (turno) {
+                state.mostrarTodosConferentes = false;
+                document.getElementById('btnMostrarTodosTurno').classList.remove('hidden');
+                document.getElementById('badgeFiltroTurno').classList.remove('hidden');
+                renderListaConferentesTurno(turno);
+            } else {
+                document.getElementById('btnMostrarTodosTurno').classList.add('hidden');
+                document.getElementById('badgeFiltroTurno').classList.add('hidden');
+                renderListaConferentesTurno();
+            }
+            atualizarPreviewTurno();
+        };
+
+        window.toggleMostrarTodosConferentes = () => {
+            state.mostrarTodosConferentes = !state.mostrarTodosConferentes;
+            const btn = document.getElementById('btnMostrarTodosTurno');
+            
+            if (state.mostrarTodosConferentes) {
+                btn.innerHTML = '<i class="ph ph-eye-slash"></i> Mostrando todos os turnos (clique para filtrar)';
+                btn.classList.add('text-gold-400');
+                document.getElementById('badgeFiltroTurno').classList.add('hidden');
+            } else {
+                btn.innerHTML = '<i class="ph ph-eye"></i> Mostrar conferentes de outros turnos (Exceção)';
+                btn.classList.remove('text-gold-400');
+                document.getElementById('badgeFiltroTurno').classList.remove('hidden');
+            }
+            
+            renderListaConferentesTurno();
         };
 
         window.toggleCampos15x23 = () => {
@@ -1287,7 +1446,6 @@
                 document.getElementById('turnoQuantidade').required = true;
                 document.getElementById('qtd15_19').required = false;
             }
-            atualizarPreviewTurno();
         };
 
         window.atualizarPreviewTurno = () => {
@@ -1383,9 +1541,7 @@
                 const navio = state.navios.find(n => n.id === navioId);
                 const turnos = navio.turnos || [];
                 
-                // Recalcular totais
                 const totalBruto = (navio.totalBruto || 0) + valorBruto;
-                // Média ponderada ou acumulado? Vamos mostrar o total líquido dividido pelos turnos
                 const totalLiquido = (navio.totalLiquido || 0) + valorLiquidoPorConferente;
                 
                 await window.updateDoc(navioRef, {
@@ -1404,17 +1560,15 @@
             }
         });
 
-        // Fase 2: Fechar Navio (Gera PDF)
+        // Fechar Navio (Fase 2)
         window.fecharNavio = async (navioId) => {
             if (!confirm('Ao fechar o navio, será gerado um relatório PDF. Deseja continuar?')) return;
             
             const navio = state.navios.find(n => n.id === navioId);
             if (!navio) return;
             
-            // Gerar conteúdo do PDF
             await gerarConteudoPDF(navio);
             
-            // Aguardar um momento para o usuário visualizar, depois atualizar status
             setTimeout(async () => {
                 try {
                     await window.updateDoc(window.doc(window.db, 'navios', navioId), {
@@ -1428,6 +1582,180 @@
             }, 1000);
         };
 
+        // Reabrir Navio (Nova funcionalidade)
+        window.reabrirNavio = async (navioId) => {
+            if (!confirm('Deseja reabrir este navio para edição? O status voltará para "Em Aberto" e você poderá adicionar ou remover turnos.')) return;
+            
+            try {
+                await window.updateDoc(window.doc(window.db, 'navios', navioId), {
+                    status: 'aberto',
+                    dataReabertura: new Date().toISOString()
+                });
+                alert('✅ Navio reaberto para edição!');
+            } catch (error) {
+                alert('Erro ao reabrir navio');
+                console.error(error);
+            }
+        };
+
+        // Modal de Autorização de Pagamento (Fase 3 - Nova Implementação)
+        window.abrirModalAutorizacao = (navioId) => {
+            const navio = state.navios.find(n => n.id === navioId);
+            if (!navio || !navio.turnos) return;
+            
+            state.navioPagamentoAtual = navio;
+            
+            // Agrupar valores por conferente
+            const conferentesMap = {};
+            navio.turnos.forEach(turno => {
+                turno.conferentes.forEach(conf => {
+                    if (!conferentesMap[conf.id]) {
+                        const assoc = state.associados.find(a => a.id === conf.id);
+                        conferentesMap[conf.id] = {
+                            id: conf.id,
+                            nome: conf.nome,
+                            valorReceber: 0,
+                            valesPendentes: assoc ? (assoc.valesPendentes || 0) : 0,
+                            turnos: 0
+                        };
+                    }
+                    conferentesMap[conf.id].valorReceber += turno.valorLiquidoPorConferente;
+                    conferentesMap[conf.id].turnos += 1;
+                });
+            });
+            
+            // Renderizar lista no modal
+            const container = document.getElementById('conteudoAutorizacao');
+            container.innerHTML = '';
+            
+            let totalGeral = 0;
+            
+            Object.values(conferentesMap).forEach(conf => {
+                const valorFinal = Math.max(0, conf.valorReceber - conf.valesPendentes);
+                totalGeral += valorFinal;
+                
+                const div = document.createElement('div');
+                div.className = 'p-4 rounded-xl bg-slate-800/50 border border-slate-700 space-y-3';
+                div.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="font-semibold text-white text-lg">${conf.nome}</div>
+                            <div class="text-sm text-slate-400">${conf.turnos} turno(s) trabalhado(s)</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-slate-400">A receber do navio:</div>
+                            <div class="text-xl font-mono font-bold text-gold-400">R$ ${conf.valorReceber.toFixed(2)}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 pt-3 border-t border-slate-700">
+                        <div>
+                            <label class="block text-xs text-amber-400 mb-1">Vales Pendentes</label>
+                            <div class="text-sm font-mono text-amber-400">R$ ${conf.valesPendentes.toFixed(2)}</div>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-cyan-400 mb-1">Descontar Vale (R$)</label>
+                            <input type="number" 
+                                   class="input-field w-full px-3 py-2 rounded-lg text-white font-mono text-sm" 
+                                   value="${Math.min(conf.valesPendentes, conf.valorReceber).toFixed(2)}"
+                                   max="${conf.valorReceber}"
+                                   step="0.01"
+                                   data-assoc-id="${conf.id}"
+                                   data-valor-receber="${conf.valorReceber}"
+                                   data-vales-pendentes="${conf.valesPendentes}"
+                                   onchange="atualizarTotalPagamento()"
+                                   oninput="atualizarTotalPagamento()">
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end pt-2">
+                        <div class="text-sm text-slate-400">Líquido a creditar: 
+                            <span class="text-emerald-400 font-mono font-bold text-lg" id="liquido-${conf.id}">
+                                R$ ${valorFinal.toFixed(2)}
+                            </span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            
+            document.getElementById('totalPagamento').textContent = `R$ ${totalGeral.toFixed(2)}`;
+            document.getElementById('modalAutorizarPagamento').classList.remove('hidden');
+        };
+
+        window.atualizarTotalPagamento = () => {
+            const inputs = document.querySelectorAll('#conteudoAutorizacao input[type="number"]');
+            let total = 0;
+            
+            inputs.forEach(input => {
+                const valorReceber = parseFloat(input.dataset.valorReceber) || 0;
+                const desconto = parseFloat(input.value) || 0;
+                const liquido = Math.max(0, valorReceber - desconto);
+                const assocId = input.dataset.assocId;
+                
+                document.getElementById(`liquido-${assocId}`).textContent = `R$ ${liquido.toFixed(2)}`;
+                total += liquido;
+            });
+            
+            document.getElementById('totalPagamento').textContent = `R$ ${total.toFixed(2)}`;
+        };
+
+        window.confirmarPagamentoComDescontos = async () => {
+            if (!state.navioPagamentoAtual) return;
+            
+            const navio = state.navioPagamentoAtual;
+            const inputs = document.querySelectorAll('#conteudoAutorizacao input[type="number"]');
+            
+            try {
+                const batch = window.writeBatch(window.db);
+                const descontosAplicados = {};
+                
+                inputs.forEach(input => {
+                    const assocId = input.dataset.assocId;
+                    const valorReceber = parseFloat(input.dataset.valorReceber) || 0;
+                    const valesPendentes = parseFloat(input.dataset.valesPendentes) || 0;
+                    const desconto = parseFloat(input.value) || 0;
+                    const liquido = Math.max(0, valorReceber - desconto);
+                    
+                    // Atualizar saldo do associado (adiciona líquido)
+                    const assocRef = window.doc(window.db, 'associados', assocId);
+                    const assoc = state.associados.find(a => a.id === assocId);
+                    const saldoAtual = assoc ? assoc.saldo : 0;
+                    
+                    batch.update(assocRef, {
+                        saldo: saldoAtual + liquido,
+                        valesPendentes: Math.max(0, valesPendentes - desconto)
+                    });
+                    
+                    // Registrar desconto aplicado
+                    descontosAplicados[assocId] = {
+                        nome: assoc ? assoc.nome : 'Desconhecido',
+                        valorReceber: valorReceber,
+                        descontoVale: desconto,
+                        liquidoCreditado: liquido
+                    };
+                });
+                
+                // Atualizar navio para pago e guardar descontos
+                const navioRef = window.doc(window.db, 'navios', navio.id);
+                batch.update(navioRef, { 
+                    status: 'pago',
+                    descontosAplicados: descontosAplicados,
+                    dataPagamento: new Date().toISOString()
+                });
+                
+                await batch.commit();
+                
+                fecharModal('modalAutorizarPagamento');
+                alert('✅ Pagamento autorizado! Saldos creditados e vales descontados.');
+                state.navioPagamentoAtual = null;
+            } catch (error) {
+                alert('❌ Erro ao processar pagamento');
+                console.error(error);
+            }
+        };
+
+        // PDF Generation
         async function gerarConteudoPDF(navio) {
             const container = document.getElementById('conteudoPDF');
             
@@ -1520,53 +1848,7 @@
             if (navio) gerarConteudoPDF(navio);
         };
 
-        // Fase 3: Autorizar Pagamento (Credita saldos)
-        window.autorizarPagamento = async (navioId) => {
-            if (!confirm('⚠️ ATENÇÃO: Isso creditará o valor líquido no saldo de todos os conferentes. Deseja continuar?')) return;
-            
-            const navio = state.navios.find(n => n.id === navioId);
-            if (!navio || !navio.turnos) return;
-            
-            try {
-                const batch = window.writeBatch(window.db);
-                
-                // Agrupar valores por conferente (considerando que um conferente pode estar em múltiplos turnos)
-                const saldosPorConferente = {};
-                
-                navio.turnos.forEach(turno => {
-                    turno.conferentes.forEach(conf => {
-                        if (!saldosPorConferente[conf.id]) {
-                            saldosPorConferente[conf.id] = 0;
-                        }
-                        saldosPorConferente[conf.id] += turno.valorLiquidoPorConferente;
-                    });
-                });
-                
-                // Atualizar cada associado
-                for (const [assocId, valor] of Object.entries(saldosPorConferente)) {
-                    const assocRef = window.doc(window.db, 'associados', assocId);
-                    const assoc = state.associados.find(a => a.id === assocId);
-                    const saldoAtual = assoc ? assoc.saldo : 0;
-                    
-                    batch.update(assocRef, {
-                        saldo: saldoAtual + valor
-                    });
-                }
-                
-                // Atualizar status do navio para 'pago'
-                const navioRef = window.doc(window.db, 'navios', navioId);
-                batch.update(navioRef, { status: 'pago' });
-                
-                await batch.commit();
-                
-                alert('✅ Pagamento autorizado! Saldos creditados e notificação disponível.');
-            } catch (error) {
-                alert('❌ Erro ao processar pagamento');
-                console.error(error);
-            }
-        };
-
-        // WhatsApp
+        // WhatsApp Atualizado com informações de Vale
         window.enviarWhatsappNavio = async (navioId) => {
             const navio = state.navios.find(n => n.id === navioId);
             if (!navio) return;
@@ -1576,18 +1858,38 @@
                 return;
             }
             
+            // Construir mensagem com detalhes de desconto se houver
+            let detalhesDesconto = '';
+            if (navio.descontosAplicados) {
+                detalhesDesconto = '\n\n*DETALHAMENTO POR ASSOCIADO:*\n';
+                Object.values(navio.descontosAplicados).forEach(d => {
+                    detalhesDesconto += `\n👤 ${d.nome}:\n`;
+                    detalhesDesconto += `   Bruto: R$ ${d.valorReceber.toFixed(2)}\n`;
+                    if (d.descontoVale > 0) {
+                        detalhesDesconto += `   Desconto Vale: R$ ${d.descontoVale.toFixed(2)}\n`;
+                    }
+                    detalhesDesconto += `   *Líquido: R$ ${d.liquidoCreditado.toFixed(2)}*\n`;
+                });
+            }
+            
             const mensagem = `*RESUMO DE PRODUÇÃO - SINDICATO* ⚓
 
 🚢 *Navio:* ${navio.nome}
 📅 *Período:* ${new Date(navio.dataInicio).toLocaleDateString()} a ${new Date().toLocaleDateString()}
 👥 *Turnos trabalhados:* ${navio.turnos ? navio.turnos.length : 0}
-💰 *VALOR LÍQUIDO TOTAL:* R$ ${(navio.totalLiquido || 0).toFixed(2)}
 
-_Já creditado em seu saldo. Desconto sindical de ${state.config.desconto_sindical}% aplicado._`;
+💰 *RESUMO FINANCEIRO:*
+• Valor Bruto: R$ ${(navio.totalLiquido || 0).toFixed(2)}
+${navio.descontosAplicados ? '• Descontos de Vale: Conforme detalhado abaixo' : ''}
+• *VALOR LÍQUIDO CREDITADO:* R$ ${Object.values(navio.descontosAplicados || {}).reduce((acc, d) => acc + d.liquidoCreditado, 0).toFixed(2)}
+
+${navio.descontosAplicados ? detalhesDesconto : ''}
+
+_Status: PAGO E CREDITADO EM SUA CONTA_ ✓`;
             
             const telefone = state.config.telefone_padrao || '';
             
-            if (confirm(`Enviar notificação via WhatsApp?\n\n${mensagem}`)) {
+            if (confirm(`Enviar notificação via WhatsApp?\n\n${mensagem.substring(0, 200)}...`)) {
                 try {
                     const response = await fetch(`${state.config.api_url}/message/sendText`, {
                         method: 'POST',
@@ -1614,18 +1916,14 @@ _Já creditado em seu saldo. Desconto sindical de ${state.config.desconto_sindic
 
         // Dashboard
         function updateDashboard() {
-            // Total em caixa (soma dos saldos)
             const totalCaixa = state.associados.reduce((acc, assoc) => acc + (assoc.saldo || 0), 0);
             document.getElementById('dashTotalCaixa').textContent = `R$ ${totalCaixa.toFixed(2)}`;
             
-            // Total associados
             document.getElementById('dashTotalAssociados').textContent = state.associados.length;
             
-            // Navios abertos
             const naviosAbertos = state.navios.filter(n => n.status === 'aberto').length;
             document.getElementById('dashNaviosAbertos').textContent = naviosAbertos;
             
-            // Últimos navios pagos/fechados
             const ultimos = state.navios
                 .filter(n => n.status === 'pago' || n.status === 'fechado')
                 .slice(0, 5);
@@ -1650,14 +1948,16 @@ _Já creditado em seu saldo. Desconto sindical de ${state.config.desconto_sindic
                 `).join('');
             }
             
-            // Saldos dos associados
             const saldosContainer = document.getElementById('dashSaldosAssociados');
             if (state.associados.length === 0) {
                 saldosContainer.innerHTML = '<div class="text-center py-8 text-slate-500">Nenhum associado</div>';
             } else {
                 saldosContainer.innerHTML = state.associados.map(assoc => `
                     <div class="flex items-center justify-between p-3 rounded-lg hover:bg-slate-800/50 transition-colors">
-                        <span class="text-white font-medium">${assoc.nome}</span>
+                        <div>
+                            <span class="text-white font-medium">${assoc.nome}</span>
+                            ${assoc.valesPendentes > 0 ? `<span class="ml-2 text-xs text-amber-400">(Vale: R$ ${assoc.valesPendentes.toFixed(2)})</span>` : ''}
+                        </div>
                         <span class="font-mono font-bold ${assoc.saldo >= 0 ? 'text-emerald-400' : 'text-red-400'}">
                             R$ ${(assoc.saldo || 0).toFixed(2)}
                         </span>
@@ -1702,6 +2002,7 @@ _Já creditado em seu saldo. Desconto sindical de ${state.config.desconto_sindic
             if (e.target.id === 'modalNovoNavio') fecharModal('modalNovoNavio');
             if (e.target.id === 'modalTurno') fecharModal('modalTurno');
             if (e.target.id === 'modalDetalhesNavio') fecharModal('modalDetalhesNavio');
+            if (e.target.id === 'modalAutorizarPagamento') fecharModal('modalAutorizarPagamento');
         });
     </script>
 </body>
