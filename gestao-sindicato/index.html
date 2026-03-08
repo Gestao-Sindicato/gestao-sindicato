@@ -1,0 +1,1901 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão Sindicato Pro - Sistema Financeiro Integrado</title>
+    
+    <!-- Firebase v10.8.1 -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, getDocs, updateDoc, deleteDoc, onSnapshot, query, orderBy, where } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js';
+        
+        window.firebaseApp = initializeApp({
+            apiKey: "AIzaSyDkswcMCBewnB6kw2qdLPzK57RNISWfBM8",
+            authDomain: "gestao-sindicato-72678.firebaseapp.com",
+            projectId: "gestao-sindicato-72678",
+            storageBucket: "gestao-sindicato-72678.firebasestorage.app",
+            messagingSenderId: "737909816924",
+            appId: "1:737909816924:web:c1b8672f2bc68c5ae5f099"
+        });
+        
+        window.auth = getAuth(window.firebaseApp);
+        window.db = getFirestore(window.firebaseApp);
+        window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+        window.signOut = signOut;
+        window.onAuthStateChanged = onAuthStateChanged;
+        window.doc = doc;
+        window.setDoc = setDoc;
+        window.getDoc = getDoc;
+        window.collection = collection;
+        window.addDoc = addDoc;
+        window.getDocs = getDocs;
+        window.updateDoc = updateDoc;
+        window.deleteDoc = deleteDoc;
+        window.onSnapshot = onSnapshot;
+        window.query = query;
+        window.orderBy = orderBy;
+        window.where = where;
+    </script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0f121e;
+            --bg-secondary: #1a1f2e;
+            --bg-tertiary: #252b3d;
+            --bg-hover: #2d3549;
+            --accent-gold: #ffd700;
+            --accent-cyan: #00d2ff;
+            --accent-purple: #8b5cf6;
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: radial-gradient(circle at top right, #1a1f2e 0%, #0f121e 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Scrollbar Personalizada */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-gold);
+            border-radius: 4px;
+        }
+
+        /* Login Screen */
+        .login-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f121e 0%, #1e2538 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-screen::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,215,0,0.03) 0%, transparent 70%);
+            top: -50%;
+            left: -50%;
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .login-box {
+            background: rgba(26, 31, 46, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 50px;
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 
+                        0 0 0 1px rgba(255, 215, 0, 0.1);
+            width: 100%;
+            max-width: 440px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .login-logo h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--accent-gold) 0%, #ffed4e 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .login-logo p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        /* Layout Principal */
+        .main-app {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .main-app.active {
+            display: block;
+        }
+
+        /* Navbar Premium */
+        .navbar {
+            background: rgba(15, 18, 30, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            padding: 0;
+        }
+
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .nav-item {
+            padding: 10px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(0, 210, 255, 0.15) 100%);
+            color: var(--accent-gold);
+            border-color: rgba(255, 215, 0, 0.3);
+        }
+
+        .btn-logout {
+            padding: 8px 16px;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-logout:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        /* Container e Grid */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 24px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title span {
+            font-size: 1.5rem;
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        /* Formulários */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border: 2px solid transparent;
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            background: var(--bg-hover);
+        }
+
+        select.form-control {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 40px;
+        }
+
+        textarea.form-control {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        /* Botões */
+        .btn {
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.95rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%);
+            color: #0f121e;
+            box-shadow: 0 4px 6px -1px rgba(255, 215, 0, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(255, 215, 0, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent-cyan);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+            color: white;
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.875rem;
+        }
+
+        /* Tabelas */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        thead {
+            background: rgba(255, 215, 0, 0.05);
+        }
+
+        th {
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--accent-gold);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+            color: var(--text-primary);
+        }
+
+        /* Badges */
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .badge-warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .badge-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .badge-info {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--info);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        /* Stats Cards */
+        .stat-card {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.05) 0%, rgba(0, 210, 255, 0.05) 100%);
+            border: 1px solid rgba(255, 215, 0, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-gold), var(--accent-cyan));
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--accent-gold);
+        }
+
+        /* Lista de Associados Selecionáveis */
+        .associados-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 4px;
+        }
+
+        .associado-checkbox {
+            position: relative;
+        }
+
+        .associado-checkbox input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .associado-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border: 2px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .associado-checkbox input:checked + .associado-label {
+            background: rgba(255, 215, 0, 0.1);
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        .associado-label:hover {
+            background: var(--bg-hover);
+        }
+
+        /* Configurações */
+        .config-section {
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .config-title {
+            color: var(--accent-cyan);
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .config-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: modalSlide 0.3s ease;
+        }
+
+        @keyframes modalSlide {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: none;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            max-height: 60vh;
+        }
+
+        .modal-footer {
+            padding: 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        /* Alertas */
+        .alert {
+            padding: 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: var(--warning);
+            color: var(--warning);
+        }
+
+        /* Loading */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 215, 0, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--accent-gold);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsivo */
+        @media (max-width: 768px) {
+            .grid-2, .grid-3, .grid-4 {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-menu {
+                display: none;
+            }
+            
+            .mobile-menu-btn {
+                display: block;
+            }
+            
+            .config-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Animações */
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+
+        .slide-in {
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Tela de Login -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-box">
+            <div class="login-logo">
+                <h1>⚓ Gestão Sindicato</h1>
+                <p>Sistema Financeiro Profissional</p>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">Email Administrativo</label>
+                    <input type="email" class="form-control" id="loginEmail" value="diretor@sindicato.com" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Senha de Acesso</label>
+                    <input type="password" class="form-control" id="loginPassword" placeholder="Digite sua senha" required>
+                </div>
+                <div id="loginError" class="alert alert-error hidden">
+                    <span>⚠️</span>
+                    <span>Email ou senha inválidos</span>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top: 10px;">
+                    🔐 Acessar Painel
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Aplicação Principal -->
+    <div id="mainApp" class="main-app">
+        <nav class="navbar">
+            <div class="nav-content">
+                <div class="nav-brand">
+                    <span>⚓</span>
+                    <span>Gestão Sindicato Pro</span>
+                </div>
+                <div class="nav-menu">
+                    <div class="nav-item active" onclick="showSection('dashboard')">
+                        <span>📊</span> Dashboard
+                    </div>
+                    <div class="nav-item" onclick="showSection('navios')">
+                        <span>🚢</span> Navios
+                    </div>
+                    <div class="nav-item" onclick="showSection('associados')">
+                        <span>👥</span> Associados
+                    </div>
+                    <div class="nav-item" onclick="showSection('lancamentos')">
+                        <span>💰</span> Lançamentos
+                    </div>
+                    <div class="nav-item" onclick="showSection('config')">
+                        <span>⚙️</span> Config
+                    </div>
+                    <button class="btn-logout" onclick="logout()">Sair</button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container">
+            <!-- Dashboard -->
+            <div id="section-dashboard" class="section active">
+                <div class="grid-4" style="margin-bottom: 30px;">
+                    <div class="stat-card">
+                        <div class="stat-label">Total em Caixa</div>
+                        <div class="stat-value" id="dashTotalCaixa">R$ 0,00</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Associados Ativos</div>
+                        <div class="stat-value" id="dashTotalAssociados">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Produções Mês</div>
+                        <div class="stat-value" id="dashTotalNavios">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Taxa Desconto</div>
+                        <div class="stat-value" id="dashTaxaDesconto">18%</div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <span>📈</span> Últimas Produções
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="dashUltimosNavios">
+                                <p style="color: var(--text-secondary); text-align: center; padding: 40px;">
+                                    Carregando dados...
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <span>💵</span> Saldos dos Associados
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="dashSaldosAssociados">
+                                <p style="color: var(--text-secondary); text-align: center; padding: 40px;">
+                                    Carregando dados...
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção Navios -->
+            <div id="section-navios" class="section">
+                <div class="card" style="margin-bottom: 30px;">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span>🚢</span> Lançar Nova Produção
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <form id="formNavio">
+                            <div class="grid-2">
+                                <div>
+                                    <div class="form-group">
+                                        <label class="form-label">Nome do Navio</label>
+                                        <input type="text" class="form-control" id="navioNome" required placeholder="Ex: MSC Amsterdam">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Turno de Trabalho</label>
+                                        <select class="form-control" id="navioTurno" required>
+                                            <option value="">Selecione...</option>
+                                            <option value="07x15">07x15 (Diurno)</option>
+                                            <option value="15x23">15x23 (Vespertino)</option>
+                                            <option value="23x07">23x07 (Noturno)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Tipo de Dia</label>
+                                        <select class="form-control" id="navioTipo" required>
+                                            <option value="normal">Normal</option>
+                                            <option value="feriado">Feriado</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="form-group">
+                                        <label class="form-label">Quantidade Produzida (unidades)</label>
+                                        <input type="number" class="form-control" id="navioQuantidade" required min="1" placeholder="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Selecionar Equipe de Conferentes</label>
+                                        <div class="associados-grid" id="listaAssociadosNavio" style="border: 1px solid var(--border); border-radius: 10px; padding: 15px; background: rgba(0,0,0,0.2);">
+                                            <p style="color: var(--text-secondary); grid-column: 1/-1; text-align: center;">
+                                                Carregando associados...
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="background: linear-gradient(135deg, rgba(255,215,0,0.05) 0%, rgba(0,210,255,0.05) 100%); border: 1px solid rgba(255,215,0,0.2); border-radius: 12px; padding: 20px; margin-top: 20px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                    <h3 style="color: var(--accent-gold); font-size: 1.1rem;">💰 Prévia do Cálculo</h3>
+                                    <span id="previewConferentes" style="color: var(--text-secondary); font-size: 0.9rem;">0 conferentes selecionados</span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                                    <div>
+                                        <div style="color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">Taxa Aplicada</div>
+                                        <div id="previewTaxa" style="color: var(--accent-cyan); font-size: 1.3rem; font-weight: bold;">R$ 0,00</div>
+                                    </div>
+                                    <div>
+                                        <div style="color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">Desconto Sindical</div>
+                                        <div id="previewDesconto" style="color: var(--warning); font-size: 1.3rem; font-weight: bold;">0%</div>
+                                    </div>
+                                    <div>
+                                        <div style="color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">Valor por Conferente</div>
+                                        <div id="previewValor" style="color: var(--success); font-size: 1.5rem; font-weight: bold;">R$ 0,00</div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-block">
+                                    ✓ Confirmar e Lançar Produção
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span>📋</span> Histórico de Produções
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Navio</th>
+                                    <th>Turno</th>
+                                    <th>Tipo</th>
+                                    <th>Equipe</th>
+                                    <th>Produção</th>
+                                    <th>Valor/Conf.</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaNavios"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção Associados -->
+            <div id="section-associados" class="section">
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <span>➕</span> Cadastrar Associado
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <form id="formAssociado">
+                                <div class="form-group">
+                                    <label class="form-label">Nome Completo</label>
+                                    <input type="text" class="form-control" id="assocNome" required placeholder="Nome do conferente">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Nº de Registro</label>
+                                    <input type="text" class="form-control" id="assocRegistro" required placeholder="Ex: 00123">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Telefone (WhatsApp)</label>
+                                    <input type="tel" class="form-control" id="assocTelefone" placeholder="5511999999999">
+                                    <small style="color: var(--text-secondary); font-size: 0.8rem;">Formato: 55 + DDD + Número</small>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-block">Cadastrar Associado</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <span>💳</span> Extrato de Saldos
+                            </div>
+                        </div>
+                        <div class="card-body" id="listaSaldosExtrato">
+                            <p style="color: var(--text-secondary); text-align: center;">Carregando...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 30px;">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span>👥</span> Todos os Associados
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Registro</th>
+                                    <th>Nome</th>
+                                    <th>Telefone</th>
+                                    <th>Saldo Atual</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaAssociados"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção Lançamentos -->
+            <div id="section-lancamentos" class="section">
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <span>💸</span> Lançar Vale (Adiantamento)
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <form id="formVale">
+                                <div class="form-group">
+                                    <label class="form-label">Associado</label>
+                                    <select class="form-control" id="valeAssociado" required>
+                                        <option value="">Selecione...</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Valor (R$)</label>
+                                    <input type="number" class="form-control" id="valeValor" step="0.01" min="0.01" required placeholder="0,00">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Motivo/Observação</label>
+                                    <input type="text" class="form-control" id="valeDescricao" placeholder="Ex: Adiantamento quinzenal">
+                                </div>
+                                <button type="submit" class="btn btn-danger btn-block">
+                                    − Registrar Débito (Vale)
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <span>🔍</span> Lançar Vistoria
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <form id="formVistoria">
+                                <div class="form-group">
+                                    <label class="form-label">Associado</label>
+                                    <select class="form-control" id="vistoriaAssociado" required>
+                                        <option value="">Selecione...</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Valor (R$)</label>
+                                    <input type="number" class="form-control" id="vistoriaValor" step="0.01" min="0" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Descrição</label>
+                                    <input type="text" class="form-control" id="vistoriaDescricao" placeholder="Ex: Vistoria container X">
+                                </div>
+                                <button type="submit" class="btn btn-success btn-block">
+                                    + Registrar Crédito (Vistoria)
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 30px;">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span>📜</span> Histórico de Lançamentos
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Tipo</th>
+                                    <th>Associado</th>
+                                    <th>Descrição</th>
+                                    <th>Valor</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaLancamentos"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção Configurações -->
+            <div id="section-config" class="section">
+                <form id="formConfig">
+                    <div class="grid-3">
+                        <div class="config-section">
+                            <div class="config-title">
+                                <span>🕐</span> Taxas Turno 07x15
+                            </div>
+                            <div class="config-row">
+                                <div class="form-group">
+                                    <label class="form-label">Valor Normal (R$)</label>
+                                    <input type="number" class="form-control" id="taxa_07x15_normal" step="0.01" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Valor Feriado (R$)</label>
+                                    <input type="number" class="form-control" id="taxa_07x15_feriado" step="0.01" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <div class="config-title">
+                                <span>🕐</span> Taxas Turno 15x23
+                            </div>
+                            <div class="config-row">
+                                <div class="form-group">
+                                    <label class="form-label">Valor Normal (R$)</label>
+                                    <input type="number" class="form-control" id="taxa_15x23_normal" step="0.01" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Valor Feriado (R$)</label>
+                                    <input type="number" class="form-control" id="taxa_15x23_feriado" step="0.01" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <div class="config-title">
+                                <span>🕐</span> Taxas Turno 23x07
+                            </div>
+                            <div class="config-row">
+                                <div class="form-group">
+                                    <label class="form-label">Valor Normal (R$)</label>
+                                    <input type="number" class="form-control" id="taxa_23x07_normal" step="0.01" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Valor Feriado (R$)</label>
+                                    <input type="number" class="form-control" id="taxa_23x07_feriado" step="0.01" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid-2" style="margin-top: 20px;">
+                        <div class="config-section">
+                            <div class="config-title">
+                                <span>⚙️</span> Configurações Gerais
+                            </div>
+                            <div class="config-row">
+                                <div class="form-group">
+                                    <label class="form-label">Valor Padrão Vistoria (R$)</label>
+                                    <input type="number" class="form-control" id="valor_vistoria" step="0.01" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Desconto Sindical (%)</label>
+                                    <input type="number" class="form-control" id="desconto_sindical" step="0.01" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <div class="config-title">
+                                <span>📱</span> Integração WhatsApp (Evolution API)
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">URL da API</label>
+                                <input type="url" class="form-control" id="api_url" placeholder="https://suaapi.com.br">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Chave API (ApiKey)</label>
+                                <input type="text" class="form-control" id="api_key" placeholder="Sua chave de acesso">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Telefone Padrão de Destino</label>
+                                <input type="text" class="form-control" id="telefone_padrao" placeholder="5511999999999">
+                                <small style="color: var(--text-secondary);">Formato internacional: 55 + DDD + Número</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 30px; text-align: right;">
+                        <button type="submit" class="btn btn-primary" style="min-width: 200px;">
+                            💾 Salvar Configurações
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal WhatsApp -->
+    <div id="modalWhatsapp" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">📲 Disparo de Mensagem</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Número de Destino</label>
+                    <input type="text" class="form-control" id="modalTelefone" placeholder="5511999999999">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mensagem</label>
+                    <textarea class="form-control" id="modalMensagem" rows="6"></textarea>
+                </div>
+                <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-top: 15px;">
+                    <div style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 5px;">Tipo de Envio:</div>
+                    <div style="display: flex; gap: 10px;">
+                        <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                            <input type="radio" name="tipoEnvio" value="api" checked> Evolution API
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                            <input type="radio" name="tipoEnvio" value="web"> WhatsApp Web
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-info" onclick="enviarMensagem()">Enviar Mensagem</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Estado Global
+        let currentUser = null;
+        let config = {
+            taxas: {
+                '07x15': { normal: 50, feriado: 75 },
+                '15x23': { normal: 60, feriado: 90 },
+                '23x07': { normal: 70, feriado: 105 }
+            },
+            valor_vistoria: 150.00,
+            desconto_sindical: 18,
+            api_url: '',
+            api_key: '',
+            telefone_padrao: ''
+        };
+        let associadosCache = [];
+        let ultimoNavioCalculado = null;
+
+        // Observer de Autenticação
+        window.onAuthStateChanged(window.auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mainApp').classList.add('active');
+                await initApp();
+            } else {
+                document.getElementById('loginScreen').style.display = 'flex';
+                document.getElementById('mainApp').classList.remove('active');
+            }
+        });
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                await window.signInWithEmailAndPassword(window.auth, email, password);
+            } catch (error) {
+                document.getElementById('loginError').classList.remove('hidden');
+            }
+        });
+
+        // Logout
+        window.logout = async () => {
+            await window.signOut(window.auth);
+        };
+
+        // Inicialização
+        async function initApp() {
+            await loadConfig();
+            setupRealtimeListeners();
+            loadAssociados();
+            loadNavios();
+            loadLancamentos();
+            updateDashboard();
+        }
+
+        // Listeners em Tempo Real
+        function setupRealtimeListeners() {
+            const configRef = window.doc(window.db, 'config', 'sindicato');
+            window.onSnapshot(configRef, (doc) => {
+                if (doc.exists()) {
+                    updateLocalConfig(doc.data());
+                }
+            });
+
+            // Atualizar dashboard em tempo real
+            window.onSnapshot(window.collection(window.db, 'associados'), () => {
+                updateDashboard();
+                loadAssociados();
+            });
+
+            window.onSnapshot(window.collection(window.db, 'navios'), () => {
+                updateDashboard();
+                loadNavios();
+            });
+        }
+
+        // Carregar Configurações
+        async function loadConfig() {
+            try {
+                const configRef = window.doc(window.db, 'config', 'sindicato');
+                const docSnap = await window.getDoc(configRef);
+                
+                if (docSnap.exists()) {
+                    updateLocalConfig(docSnap.data());
+                } else {
+                    await window.setDoc(configRef, config);
+                }
+            } catch (error) {
+                console.error('Erro ao carregar config:', error);
+            }
+        }
+
+        function updateLocalConfig(data) {
+            config = { ...config, ...data };
+            
+            // Atualizar inputs
+            document.getElementById('taxa_07x15_normal').value = config.taxas['07x15'].normal;
+            document.getElementById('taxa_07x15_feriado').value = config.taxas['07x15'].feriado;
+            document.getElementById('taxa_15x23_normal').value = config.taxas['15x23'].normal;
+            document.getElementById('taxa_15x23_feriado').value = config.taxas['15x23'].feriado;
+            document.getElementById('taxa_23x07_normal').value = config.taxas['23x07'].normal;
+            document.getElementById('taxa_23x07_feriado').value = config.taxas['23x07'].feriado;
+            document.getElementById('valor_vistoria').value = config.valor_vistoria;
+            document.getElementById('desconto_sindical').value = config.desconto_sindical;
+            document.getElementById('api_url').value = config.api_url || '';
+            document.getElementById('api_key').value = config.api_key || '';
+            document.getElementById('telefone_padrao').value = config.telefone_padrao || '';
+            
+            // Atualizar preview
+            document.getElementById('dashTaxaDesconto').textContent = config.desconto_sindical + '%';
+            document.getElementById('previewDesconto').textContent = config.desconto_sindical + '%';
+            document.getElementById('vistoriaValor').value = config.valor_vistoria;
+            
+            calcularPreview();
+        }
+
+        // Salvar Configurações
+        document.getElementById('formConfig').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newConfig = {
+                taxas: {
+                    '07x15': {
+                        normal: parseFloat(document.getElementById('taxa_07x15_normal').value),
+                        feriado: parseFloat(document.getElementById('taxa_07x15_feriado').value)
+                    },
+                    '15x23': {
+                        normal: parseFloat(document.getElementById('taxa_15x23_normal').value),
+                        feriado: parseFloat(document.getElementById('taxa_15x23_feriado').value)
+                    },
+                    '23x07': {
+                        normal: parseFloat(document.getElementById('taxa_23x07_normal').value),
+                        feriado: parseFloat(document.getElementById('taxa_23x07_feriado').value)
+                    }
+                },
+                valor_vistoria: parseFloat(document.getElementById('valor_vistoria').value),
+                desconto_sindical: parseFloat(document.getElementById('desconto_sindical').value),
+                api_url: document.getElementById('api_url').value,
+                api_key: document.getElementById('api_key').value,
+                telefone_padrao: document.getElementById('telefone_padrao').value
+            };
+            
+            try {
+                await window.setDoc(window.doc(window.db, 'config', 'sindicato'), newConfig);
+                alert('✅ Configurações salvas com sucesso!');
+            } catch (error) {
+                alert('❌ Erro ao salvar configurações');
+            }
+        });
+
+        // Navegação
+        window.showSection = (sectionName) => {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+            
+            document.getElementById(`section-${sectionName}`).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (sectionName === 'navios') {
+                renderAssociadosCheckbox();
+            } else if (sectionName === 'lancamentos') {
+                updateSelectsAssociados();
+            }
+        };
+
+        // CRUD Associados
+        document.getElementById('formAssociado').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nome = document.getElementById('assocNome').value;
+            const registro = document.getElementById('assocRegistro').value;
+            const telefone = document.getElementById('assocTelefone').value;
+            
+            try {
+                await window.addDoc(window.collection(window.db, 'associados'), {
+                    nome,
+                    registro,
+                    telefone,
+                    saldo: 0,
+                    createdAt: new Date().toISOString()
+                });
+                document.getElementById('formAssociado').reset();
+                alert('✅ Associado cadastrado!');
+                loadAssociados();
+            } catch (error) {
+                alert('❌ Erro ao cadastrar');
+            }
+        });
+
+        async function loadAssociados() {
+            const querySnapshot = await window.getDocs(window.query(window.collection(window.db, 'associados'), window.orderBy('nome')));
+            associadosCache = [];
+            
+            const tbody = document.getElementById('tabelaAssociados');
+            const saldosDiv = document.getElementById('listaSaldosExtrato');
+            tbody.innerHTML = '';
+            saldosDiv.innerHTML = '';
+            
+            let totalSaldos = 0;
+            
+            querySnapshot.forEach((doc) => {
+                const assoc = { id: doc.id, ...doc.data() };
+                associadosCache.push(assoc);
+                totalSaldos += assoc.saldo || 0;
+                
+                // Tabela
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><span class="badge badge-info">${assoc.registro}</span></td>
+                    <td><strong>${assoc.nome}</strong></td>
+                    <td>${assoc.telefone || '-'}</td>
+                    <td style="color: ${assoc.saldo >= 0 ? 'var(--success)' : 'var(--danger)'}; font-weight: bold;">
+                        R$ ${(assoc.saldo || 0).toFixed(2)}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="deleteAssociado('${doc.id}')">Excluir</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+                
+                // Extrato lateral
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.style = 'display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid var(--border);';
+                div.innerHTML = `
+                    <div>
+                        <div style="font-weight: 600;">${assoc.nome}</div>
+                        <small style="color: var(--text-secondary);">Reg: ${assoc.registro}</small>
+                    </div>
+                    <div style="color: ${assoc.saldo >= 0 ? 'var(--success)' : 'var(--danger)'}; font-weight: bold;">
+                        R$ ${(assoc.saldo || 0).toFixed(2)}
+                    </div>
+                `;
+                saldosDiv.appendChild(div);
+            });
+            
+            document.getElementById('dashTotalCaixa').textContent = `R$ ${totalSaldos.toFixed(2)}`;
+            document.getElementById('dashTotalAssociados').textContent = associadosCache.length;
+        }
+
+        window.deleteAssociado = async (id) => {
+            if (!confirm('Confirma exclusão?')) return;
+            await window.deleteDoc(window.doc(window.db, 'associados', id));
+            loadAssociados();
+        };
+
+        function renderAssociadosCheckbox() {
+            const container = document.getElementById('listaAssociadosNavio');
+            if (associadosCache.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; grid-column: 1/-1;">Nenhum associado cadastrado</p>';
+                return;
+            }
+            
+            container.innerHTML = associadosCache.map(assoc => `
+                <div class="associado-checkbox">
+                    <input type="checkbox" id="chk_${assoc.id}" value="${assoc.id}" onchange="calcularPreview()">
+                    <label class="associado-label" for="chk_${assoc.id}">
+                        <span style="font-size: 1.2rem;">👤</span>
+                        <div>
+                            <div style="font-weight: 600; font-size: 0.9rem;">${assoc.nome}</div>
+                            <small style="font-size: 0.75rem; opacity: 0.8;">${assoc.registro}</small>
+                        </div>
+                    </label>
+                </div>
+            `).join('');
+        }
+
+        function updateSelectsAssociados() {
+            const selects = [document.getElementById('valeAssociado'), document.getElementById('vistoriaAssociado')];
+            selects.forEach(select => {
+                const val = select.value;
+                select.innerHTML = '<option value="">Selecione...</option>';
+                associadosCache.forEach(assoc => {
+                    select.innerHTML += `<option value="${assoc.id}">${assoc.nome} (${assoc.registro})</option>`;
+                });
+                select.value = val;
+            });
+        }
+
+        // Preview do Cálculo de Navio
+        ['navioTurno', 'navioTipo', 'navioQuantidade'].forEach(id => {
+            document.getElementById(id).addEventListener('change', calcularPreview);
+            document.getElementById(id).addEventListener('input', calcularPreview);
+        });
+
+        window.calcularPreview = () => {
+            const turno = document.getElementById('navioTurno').value;
+            const tipo = document.getElementById('navioTipo').value;
+            const quantidade = parseFloat(document.getElementById('navioQuantidade').value) || 0;
+            
+            // Contar selecionados
+            const checkboxes = document.querySelectorAll('.associado-checkbox input:checked');
+            const numConferentes = checkboxes.length;
+            
+            document.getElementById('previewConferentes').textContent = `${numConferentes} conferente(s) selecionado(s)`;
+            
+            if (!turno || !quantidade || numConferentes === 0) {
+                document.getElementById('previewTaxa').textContent = 'R$ 0,00';
+                document.getElementById('previewValor').textContent = 'R$ 0,00';
+                return;
+            }
+            
+            const taxa = config.taxas[turno][tipo];
+            const valorBruto = (quantidade * taxa) / numConferentes;
+            const desconto = config.desconto_sindical / 100;
+            const valorLiquido = valorBruto * (1 - desconto);
+            
+            document.getElementById('previewTaxa').textContent = `R$ ${taxa.toFixed(2)}`;
+            document.getElementById('previewValor').textContent = `R$ ${valorLiquido.toFixed(2)}`;
+            
+            // Guardar dados para uso no submit
+            ultimoNavioCalculado = {
+                valorPorConferente: valorLiquido,
+                associadosIds: Array.from(checkboxes).map(cb => cb.value),
+                dados: {
+                    navio: document.getElementById('navioNome').value,
+                    turno,
+                    tipo,
+                    quantidade,
+                    taxa,
+                    numConferentes,
+                    desconto: config.desconto_sindical,
+                    valorLiquido
+                }
+            };
+        };
+
+        // Salvar Navio e Credit Associados
+        document.getElementById('formNavio').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!ultimoNavioCalculado || ultimoNavioCalculado.associadosIds.length === 0) {
+                alert('Selecione pelo menos um conferente!');
+                return;
+            }
+            
+            try {
+                // 1. Salvar o navio
+                const navioRef = await window.addDoc(window.collection(window.db, 'navios'), {
+                    ...ultimoNavioCalculado.dados,
+                    associadosIds: ultimoNavioCalculado.associadosIds,
+                    createdAt: new Date().toISOString()
+                });
+                
+                // 2. Creditar valor em cada associado
+                for (const assocId of ultimoNavioCalculado.associadosIds) {
+                    const assocRef = window.doc(window.db, 'associados', assocId);
+                    const assocDoc = await window.getDoc(assocRef);
+                    const saldoAtual = assocDoc.data().saldo || 0;
+                    const novoSaldo = saldoAtual + ultimoNavioCalculado.valorPorConferente;
+                    await window.updateDoc(assocRef, { saldo: novoSaldo });
+                }
+                
+                alert(`✅ Produção lançada! ${ultimoNavioCalculado.associadosIds.length} associados creditados.`);
+                document.getElementById('formNavio').reset();
+                document.querySelectorAll('.associado-checkbox input').forEach(cb => cb.checked = false);
+                calcularPreview();
+                loadNavios();
+                loadAssociados();
+            } catch (error) {
+                console.error(error);
+                alert('❌ Erro ao lançar produção');
+            }
+        });
+
+        async function loadNavios() {
+            const querySnapshot = await window.getDocs(window.query(window.collection(window.db, 'navios'), window.orderBy('createdAt', 'desc')));
+            const tbody = document.getElementById('tabelaNavios');
+            tbody.innerHTML = '';
+            
+            document.getElementById('dashTotalNavios').textContent = querySnapshot.size;
+            
+            querySnapshot.forEach((doc) => {
+                const nav = doc.data();
+                const data = new Date(nav.createdAt).toLocaleDateString('pt-BR');
+                const nomesAssociados = nav.associadosIds ? nav.associadosIds.length : 0;
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${data}</td>
+                    <td><strong>${nav.navio}</strong></td>
+                    <td><span class="badge badge-info">${nav.turno}</span></td>
+                    <td><span class="badge ${nav.tipo === 'feriado' ? 'badge-warning' : 'badge-success'}">${nav.tipo}</span></td>
+                    <td>${nomesAssociados} conf.</td>
+                    <td>${nav.quantidade} unid.</td>
+                    <td style="color: var(--accent-gold); font-weight: bold;">R$ ${nav.valorLiquido.toFixed(2)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-secondary" onclick="abrirModalWhatsapp('${doc.id}')">📱 Enviar</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteNavio('${doc.id}')">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            // Atualizar dashboard com últimos navios
+            const dashNavios = document.getElementById('dashUltimosNavios');
+            if (querySnapshot.size === 0) {
+                dashNavios.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">Nenhuma produção registrada</p>';
+            } else {
+                const ultimos = querySnapshot.docs.slice(0, 5);
+                dashNavios.innerHTML = ultimos.map(doc => {
+                    const nav = doc.data();
+                    return `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--border);">
+                            <div>
+                                <div style="font-weight: 600; color: var(--accent-gold);">${nav.navio}</div>
+                                <small style="color: var(--text-secondary);">${nav.turno} • ${new Date(nav.createdAt).toLocaleDateString()}</small>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-weight: bold;">R$ ${nav.valorLiquido.toFixed(2)}</div>
+                                <small style="color: var(--text-secondary);">por conferente</small>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        window.deleteNavio = async (id) => {
+            if (!confirm('⚠️ Atenção: Isso não reverterá os saldos dos associados. Deseja continuar?')) return;
+            await window.deleteDoc(window.doc(window.db, 'navios', id));
+            loadNavios();
+        };
+
+        // Lançamentos (Vales e Vistorias)
+        document.getElementById('formVale').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await processarLancamento('vale', 'debito');
+        });
+
+        document.getElementById('formVistoria').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await processarLancamento('vistoria', 'credito');
+        });
+
+        async function processarLancamento(tipo, operacao) {
+            const isVale = tipo === 'vale';
+            const associadoId = document.getElementById(isVale ? 'valeAssociado' : 'vistoriaAssociado').value;
+            const valor = parseFloat(document.getElementById(isVale ? 'valeValor' : 'vistoriaValor').value);
+            const descricao = document.getElementById(isVale ? 'valeDescricao' : 'vistoriaDescricao').value;
+            
+            if (!associadoId) {
+                alert('Selecione um associado');
+                return;
+            }
+            
+            try {
+                // Adicionar lançamento
+                await window.addDoc(window.collection(window.db, 'lancamentos'), {
+                    tipo,
+                    associadoId,
+                    valor,
+                    descricao,
+                    createdAt: new Date().toISOString()
+                });
+                
+                // Atualizar saldo
+                const assocRef = window.doc(window.db, 'associados', associadoId);
+                const assocDoc = await window.getDoc(assocRef);
+                const saldoAtual = assocDoc.data().saldo || 0;
+                const novoSaldo = operacao === 'debito' ? saldoAtual - valor : saldoAtual + valor;
+                
+                await window.updateDoc(assocRef, { saldo: novoSaldo });
+                
+                // Limpar form
+                document.getElementById(isVale ? 'formVale' : 'formVistoria').reset();
+                if (!isVale) document.getElementById('vistoriaValor').value = config.valor_vistoria;
+                
+                alert(`✅ ${isVale ? 'Vale' : 'Vistoria'} registrado com sucesso!`);
+                loadLancamentos();
+                loadAssociados();
+            } catch (error) {
+                alert('❌ Erro ao registrar');
+            }
+        }
+
+        async function loadLancamentos() {
+            const querySnapshot = await window.getDocs(window.query(window.collection(window.db, 'lancamentos'), window.orderBy('createdAt', 'desc')));
+            const tbody = document.getElementById('tabelaLancamentos');
+            tbody.innerHTML = '';
+            
+            querySnapshot.forEach((doc) => {
+                const lanc = doc.data();
+                const data = new Date(lanc.createdAt).toLocaleDateString('pt-BR');
+                const isVale = lanc.tipo === 'vale';
+                const assoc = associadosCache.find(a => a.id === lanc.associadoId);
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${data}</td>
+                    <td><span class="badge ${isVale ? 'badge-danger' : 'badge-success'}">${isVale ? 'VALE' : 'VISTORIA'}</span></td>
+                    <td>${assoc ? assoc.nome : 'Desconhecido'}</td>
+                    <td>${lanc.descricao || '-'}</td>
+                    <td style="color: ${isVale ? 'var(--danger)' : 'var(--success)'}; font-weight: bold;">
+                        ${isVale ? '-' : '+'} R$ ${lanc.valor.toFixed(2)}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="deleteLancamento('${doc.id}', '${lanc.associadoId}', ${lanc.valor}, '${lanc.tipo}')">Excluir</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        window.deleteLancamento = async (id, associadoId, valor, tipo) => {
+            if (!confirm('Confirma exclusão? O saldo será revertido.')) return;
+            
+            try {
+                const assocRef = window.doc(window.db, 'associados', associadoId);
+                const assocDoc = await window.getDoc(assocRef);
+                const saldoAtual = assocDoc.data().saldo || 0;
+                const novoSaldo = tipo === 'vale' ? saldoAtual + valor : saldoAtual - valor;
+                
+                await window.updateDoc(assocRef, { saldo: novoSaldo });
+                await window.deleteDoc(window.doc(window.db, 'lancamentos', id));
+                
+                loadLancamentos();
+                loadAssociados();
+            } catch (error) {
+                alert('Erro ao excluir');
+            }
+        };
+
+        // Dashboard
+        async function updateDashboard() {
+            const associadosSnap = await window.getDocs(window.collection(window.db, 'associados'));
+            const naviosSnap = await window.getDocs(window.collection(window.db, 'navios'));
+            
+            let totalSaldos = 0;
+            associadosSnap.forEach(doc => {
+                totalSaldos += doc.data().saldo || 0;
+            });
+            
+            document.getElementById('dashTotalCaixa').textContent = `R$ ${totalSaldos.toFixed(2)}`;
+            document.getElementById('dashTotalAssociados').textContent = associadosSnap.size;
+            document.getElementById('dashTotalNavios').textContent = naviosSnap.size;
+            
+            // Saldos individuais no dashboard
+            const saldosDiv = document.getElementById('dashSaldosAssociados');
+            if (associadosSnap.size === 0) {
+                saldosDiv.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">Nenhum associado</p>';
+            } else {
+                saldosDiv.innerHTML = '';
+                associadosSnap.forEach(doc => {
+                    const assoc = doc.data();
+                    const div = document.createElement('div');
+                    div.style = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border);';
+                    div.innerHTML = `
+                        <span style="font-weight: 500;">${assoc.nome}</span>
+                        <span style="color: ${assoc.saldo >= 0 ? 'var(--success)' : 'var(--danger)'}; font-weight: bold;">
+                            R$ ${(assoc.saldo || 0).toFixed(2)}
+                        </span>
+                    `;
+                    saldosDiv.appendChild(div);
+                });
+            }
+        }
+
+        // WhatsApp Integration
+        window.abrirModalWhatsapp = async (navioId) => {
+            const docSnap = await window.getDoc(window.doc(window.db, 'navios', navioId));
+            if (!docSnap.exists()) return;
+            
+            const nav = docSnap.data();
+            const mensagem = `*RESUMO DE PRODUÇÃO - SINDICATO* ⚓
+
+🚢 *Navio:* ${nav.navio}
+🕐 *Turno:* ${nav.turno} (${nav.tipo.toUpperCase()})
+📦 *Produção:* ${nav.quantidade} unidades
+👥 *Equipe:* ${nav.associadosIds ? nav.associadosIds.length : 0} conferentes
+💰 *VALOR LÍQUIDO POR CONFERENTE:* R$ ${nav.valorLiquido.toFixed(2)}
+
+_Desconto sindical de ${nav.desconto}% já aplicado._`;
+            
+            document.getElementById('modalMensagem').value = mensagem;
+            document.getElementById('modalTelefone').value = config.telefone_padrao || '';
+            document.getElementById('modalWhatsapp').classList.add('active');
+        };
+
+        window.closeModal = () => {
+            document.getElementById('modalWhatsapp').classList.remove('active');
+        };
+
+        window.enviarMensagem = async () => {
+            const telefone = document.getElementById('modalTelefone').value;
+            const mensagem = document.getElementById('modalMensagem').value;
+            const tipoEnvio = document.querySelector('input[name="tipoEnvio"]:checked').value;
+            
+            if (!telefone || !mensagem) {
+                alert('Preencha todos os campos');
+                return;
+            }
+            
+            if (tipoEnvio === 'web') {
+                // WhatsApp Web
+                const link = `https://wa.me/${telefone}?text=${encodeURIComponent(mensagem)}`;
+                window.open(link, '_blank');
+                closeModal();
+            } else {
+                // Evolution API
+                if (!config.api_url || !config.api_key) {
+                    alert('Configure a URL e Chave da API nas configurações primeiro!');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch(`${config.api_url}/message/sendText`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'apikey': config.api_key
+                        },
+                        body: JSON.stringify({
+                            number: telefone,
+                            text: mensagem
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        alert('✅ Mensagem enviada com sucesso!');
+                        closeModal();
+                    } else {
+                        throw new Error('Erro na API');
+                    }
+                } catch (error) {
+                    alert('❌ Erro ao enviar via API. Verifique as configurações.');
+                }
+            }
+        };
+
+        // Expor funções globais
+        window.calcularPreview = calcularPreview;
+    </script>
+</body>
+</html>
