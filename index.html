@@ -8,7 +8,7 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Firebase SDK v10.8.1 -->
+    <!-- Firebase SDK v10.8.1 Modular -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js';
         import { 
@@ -84,10 +84,11 @@
                         mono: ['JetBrains Mono', 'monospace'],
                     },
                     colors: {
-                        slate: {
-                            850: '#151e2e',
-                            900: '#0f172a',
+                        navy: {
                             950: '#020617',
+                            900: '#0f172a',
+                            800: '#1e293b',
+                            850: '#151e2e',
                         },
                         gold: {
                             400: '#fbbf24',
@@ -125,6 +126,12 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
         }
         
+        .sidebar-glass {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
         .input-field {
             background: rgba(15, 23, 42, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -147,10 +154,20 @@
             box-shadow: 0 6px 8px -1px rgba(245, 158, 11, 0.3);
         }
         
+        .nav-item {
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+        
         .nav-item.active {
             background: rgba(251, 191, 36, 0.1);
-            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-left-color: #fbbf24;
             color: #fbbf24;
+        }
+        
+        .nav-item:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.03);
+            border-left-color: rgba(255, 255, 255, 0.1);
         }
         
         .status-badge {
@@ -197,6 +214,15 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        
+        .modal-fullscreen {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            background: rgba(2, 6, 23, 0.95);
+            backdrop-filter: blur(20px);
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body class="text-slate-200 antialiased overflow-x-hidden">
@@ -240,425 +266,527 @@
     </div>
 
     <!-- Aplicação Principal -->
-    <div id="mainApp" class="hidden min-h-screen flex flex-col">
-        <!-- Navbar -->
-        <nav class="sticky top-0 z-40 glass-panel border-b border-slate-700/50">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex items-center justify-between h-16">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center shadow-lg shadow-gold-500/20">
-                            <i class="ph ph-anchor text-xl text-slate-900"></i>
-                        </div>
-                        <span class="text-xl font-bold bg-gradient-to-r from-gold-400 to-cyan-400 bg-clip-text text-transparent">
-                            Gestão Sindicato Pro
-                        </span>
+    <div id="mainApp" class="hidden min-h-screen flex">
+        <!-- Sidebar -->
+        <aside class="fixed left-0 top-0 h-full w-64 sidebar-glass z-40 hidden lg:flex flex-col">
+            <div class="p-6 border-b border-white/5">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center shadow-lg shadow-gold-500/20">
+                        <i class="ph ph-anchor text-xl text-slate-900"></i>
                     </div>
-                    
-                    <div class="hidden md:flex items-center gap-2">
-                        <button onclick="showSection('dashboard')" id="nav-dashboard" class="nav-item active px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white transition-colors">
-                            <i class="ph ph-squares-four text-lg"></i>
-                            <span>Dashboard</span>
-                        </button>
-                        <button onclick="showSection('navios')" id="nav-navios" class="nav-item px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white transition-colors">
-                            <i class="ph ph-ship text-lg"></i>
-                            <span>Navios</span>
-                        </button>
-                        <button onclick="showSection('associados')" id="nav-associados" class="nav-item px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white transition-colors">
-                            <i class="ph ph-users text-lg"></i>
-                            <span>Associados</span>
-                        </button>
-                        <button onclick="showSection('lancamentos')" id="nav-lancamentos" class="nav-item px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white transition-colors">
-                            <i class="ph ph-currency-dollar text-lg"></i>
-                            <span>Lançamentos</span>
-                        </button>
-                        <button onclick="showSection('config')" id="nav-config" class="nav-item px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white transition-colors">
-                            <i class="ph ph-gear text-lg"></i>
-                            <span>Configurações</span>
-                        </button>
+                    <div>
+                        <h1 class="text-lg font-bold text-white">Gestão Sindicato</h1>
+                        <p class="text-xs text-slate-500">Enterprise Pro</p>
                     </div>
-
-                    <button onclick="logout()" class="px-4 py-2 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors text-sm font-medium flex items-center gap-2">
-                        <i class="ph ph-sign-out"></i>
-                        <span class="hidden sm:inline">Sair</span>
-                    </button>
                 </div>
             </div>
-        </nav>
-
-        <!-- Conteúdo -->
-        <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
             
-            <!-- Dashboard -->
-            <section id="section-dashboard" class="section fade-in space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div class="glass-card rounded-2xl p-6 border-l-4 border-gold-400">
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-slate-400 text-sm font-medium">Total em Caixa</span>
-                            <div class="w-10 h-10 rounded-lg bg-gold-400/10 flex items-center justify-center">
-                                <i class="ph ph-coins text-gold-400 text-xl"></i>
-                            </div>
-                        </div>
-                        <div class="text-2xl font-bold text-white font-mono" id="dashTotalCaixa">R$ 0,00</div>
-                        <div class="text-xs text-slate-500 mt-1">Saldo acumulado dos associados</div>
-                    </div>
+            <nav class="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
+                <button onclick="showSection('dashboard')" id="nav-dashboard" class="nav-item active w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-400 rounded-lg">
+                    <i class="ph ph-squares-four text-lg"></i>
+                    Dashboard
+                </button>
+                <button onclick="showSection('navios')" id="nav-navios" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-400 rounded-lg">
+                    <i class="ph ph-ship text-lg"></i>
+                    Gestão de Navios
+                </button>
+                <button onclick="showSection('associados')" id="nav-associados" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-400 rounded-lg">
+                    <i class="ph ph-users text-lg"></i>
+                    Associados
+                </button>
+                <button onclick="showSection('lancamentos')" id="nav-lancamentos" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-400 rounded-lg">
+                    <i class="ph ph-currency-dollar text-lg"></i>
+                    Lançamentos
+                </button>
+                <button onclick="showSection('fechamento')" id="nav-fechamento" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-400 rounded-lg">
+                    <i class="ph ph-whatsapp-logo text-lg"></i>
+                    Folha de Pagamento
+                </button>
+                <button onclick="showSection('config')" id="nav-config" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-400 rounded-lg">
+                    <i class="ph ph-gear text-lg"></i>
+                    Configurações
+                </button>
+            </nav>
+            
+            <div class="p-4 border-t border-white/5">
+                <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                    <i class="ph ph-sign-out text-lg"></i>
+                    Sair do Sistema
+                </button>
+            </div>
+        </aside>
 
-                    <div class="glass-card rounded-2xl p-6 border-l-4 border-cyan-400">
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-slate-400 text-sm font-medium">Associados Ativos</span>
-                            <div class="w-10 h-10 rounded-lg bg-cyan-400/10 flex items-center justify-center">
-                                <i class="ph ph-users text-cyan-400 text-xl"></i>
-                            </div>
-                        </div>
-                        <div class="text-2xl font-bold text-white" id="dashTotalAssociados">0</div>
-                        <div class="text-xs text-slate-500 mt-1">Conferentes cadastrados</div>
-                    </div>
-
-                    <div class="glass-card rounded-2xl p-6 border-l-4 border-emerald-400">
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-slate-400 text-sm font-medium">Navios em Operação</span>
-                            <div class="w-10 h-10 rounded-lg bg-emerald-400/10 flex items-center justify-center">
-                                <i class="ph ph-ship text-emerald-400 text-xl"></i>
-                            </div>
-                        </div>
-                        <div class="text-2xl font-bold text-white" id="dashNaviosAbertos">0</div>
-                        <div class="text-xs text-slate-500 mt-1">Aguardando fechamento</div>
-                    </div>
-
-                    <div class="glass-card rounded-2xl p-6 border-l-4 border-purple-400">
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-slate-400 text-sm font-medium">Taxa Desconto</span>
-                            <div class="w-10 h-10 rounded-lg bg-purple-400/10 flex items-center justify-center">
-                                <i class="ph ph-percent text-purple-400 text-xl"></i>
-                            </div>
-                        </div>
-                        <div class="text-2xl font-bold text-white" id="dashTaxaDesconto">18%</div>
-                        <div class="text-xs text-slate-500 mt-1">Desconto sindical configurado</div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="glass-card rounded-2xl p-6">
-                        <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                            <i class="ph ph-chart-line-up text-gold-400"></i>
-                            Últimos Navios Finalizados
-                        </h3>
-                        <div id="dashUltimosNavios" class="space-y-3">
-                            <div class="text-center py-8 text-slate-500">Carregando...</div>
-                        </div>
-                    </div>
-
-                    <div class="glass-card rounded-2xl p-6">
-                        <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                            <i class="ph ph-wallet text-cyan-400"></i>
-                            Saldos dos Associados
-                        </h3>
-                        <div class="overflow-y-auto max-h-96 space-y-2" id="dashSaldosAssociados">
-                            <div class="text-center py-8 text-slate-500">Carregando...</div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Seção Navios -->
-            <section id="section-navios" class="section hidden fade-in space-y-6">
+        <!-- Conteúdo Principal -->
+        <main class="flex-1 lg:ml-64 min-h-screen flex flex-col">
+            <!-- Header Mobile -->
+            <header class="lg:hidden glass-panel border-b border-slate-700/50 p-4 sticky top-0 z-30">
                 <div class="flex items-center justify-between">
-                    <h2 class="text-2xl font-bold text-white flex items-center gap-3">
-                        <i class="ph ph-ship text-gold-400"></i>
-                        Gestão de Navios
-                    </h2>
-                    <button onclick="abrirModalNovoNavio()" class="px-4 py-2 rounded-lg btn-primary text-slate-900 font-semibold flex items-center gap-2">
-                        <i class="ph ph-plus"></i>
-                        Novo Navio
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center">
+                            <i class="ph ph-anchor text-slate-900"></i>
+                        </div>
+                        <span class="font-bold text-white">Gestão Sindicato</span>
+                    </div>
+                    <button onclick="document.querySelector('aside').classList.toggle('hidden'); document.querySelector('aside').classList.toggle('fixed'); document.querySelector('aside').classList.toggle('inset-0');" class="text-white">
+                        <i class="ph ph-list text-2xl"></i>
                     </button>
                 </div>
+            </header>
 
-                <!-- Filtros de Status -->
-                <div class="flex gap-2 overflow-x-auto pb-2">
-                    <button onclick="filtrarNavios('todos')" class="filtro-navio active px-4 py-2 rounded-lg bg-slate-800 text-white text-sm font-medium border border-slate-700 hover:border-gold-400 transition-colors" data-filtro="todos">Todos</button>
-                    <button onclick="filtrarNavios('aberto')" class="filtro-navio px-4 py-2 rounded-lg bg-slate-800/50 text-slate-400 text-sm font-medium border border-slate-700 hover:border-emerald-400 hover:text-emerald-400 transition-colors" data-filtro="aberto">Em Aberto</button>
-                    <button onclick="filtrarNavios('fechado')" class="filtro-navio px-4 py-2 rounded-lg bg-slate-800/50 text-slate-400 text-sm font-medium border border-slate-700 hover:border-amber-400 hover:text-amber-400 transition-colors" data-filtro="fechado">Aguardando Pagamento</button>
-                    <button onclick="filtrarNavios('pago')" class="filtro-navio px-4 py-2 rounded-lg bg-slate-800/50 text-slate-400 text-sm font-medium border border-slate-700 hover:border-blue-400 hover:text-blue-400 transition-colors" data-filtro="pago">Pagos</button>
-                </div>
+            <!-- Conteúdo das Seções -->
+            <div class="flex-1 p-4 lg:p-8 max-w-7xl mx-auto w-full">
+                
+                <!-- Dashboard -->
+                <section id="section-dashboard" class="section fade-in space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="glass-card rounded-2xl p-6 border-l-4 border-gold-400">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-slate-400 text-sm font-medium">Caixa Real Disponível</span>
+                                <div class="w-10 h-10 rounded-lg bg-gold-400/10 flex items-center justify-center">
+                                    <i class="ph ph-coins text-gold-400 text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="text-2xl font-bold text-white font-mono" id="dashTotalCaixa">R$ 0,00</div>
+                            <div class="text-xs text-slate-500 mt-1">Saldo acumulado real</div>
+                        </div>
 
-                <div id="listaNavios" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    <!-- Cards de navios serão inseridos aqui -->
-                </div>
-            </section>
+                        <div class="glass-card rounded-2xl p-6 border-l-4 border-cyan-400">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-slate-400 text-sm font-medium">Associados Ativos</span>
+                                <div class="w-10 h-10 rounded-lg bg-cyan-400/10 flex items-center justify-center">
+                                    <i class="ph ph-users text-cyan-400 text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="text-2xl font-bold text-white" id="dashTotalAssociados">0</div>
+                            <div class="text-xs text-slate-500 mt-1">Conferentes cadastrados</div>
+                        </div>
 
-            <!-- Seção Associados -->
-            <section id="section-associados" class="section hidden fade-in space-y-6">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="glass-card rounded-2xl p-6">
-                        <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                            <i class="ph ph-user-plus text-gold-400"></i>
-                            Cadastrar Associado
-                        </h3>
-                        <form id="formAssociado" class="space-y-4">
-                            <div>
-                                <label class="block text-sm text-slate-400 mb-1">Nome Completo</label>
-                                <input type="text" id="assocNome" required class="w-full px-4 py-2 rounded-lg input-field text-white">
+                        <div class="glass-card rounded-2xl p-6 border-l-4 border-emerald-400">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-slate-400 text-sm font-medium">Navios em Operação</span>
+                                <div class="w-10 h-10 rounded-lg bg-emerald-400/10 flex items-center justify-center">
+                                    <i class="ph ph-ship text-emerald-400 text-xl"></i>
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-sm text-slate-400 mb-1">Nº de Registro</label>
-                                <input type="text" id="assocRegistro" required class="w-full px-4 py-2 rounded-lg input-field text-white">
+                            <div class="text-2xl font-bold text-white" id="dashNaviosAbertos">0</div>
+                            <div class="text-xs text-slate-500 mt-1">Aguardando fechamento</div>
+                        </div>
+
+                        <div class="glass-card rounded-2xl p-6 border-l-4 border-purple-400">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-slate-400 text-sm font-medium">Vales Pendentes</span>
+                                <div class="w-10 h-10 rounded-lg bg-purple-400/10 flex items-center justify-center">
+                                    <i class="ph ph-warning text-purple-400 text-xl"></i>
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-sm text-slate-400 mb-1">Turno Padrão</label>
-                                <select id="assocTurnoPadrao" required class="w-full px-4 py-2 rounded-lg input-field text-white bg-slate-900">
-                                    <option value="07x15">07x15 (Manhã)</option>
-                                    <option value="15x23">15x23 (Tarde/Noite)</option>
-                                    <option value="23x07">23x07 (Madrugada)</option>
-                                    <option value="folguista">Sem turno fixo / Folguista</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm text-slate-400 mb-1">Telefone (WhatsApp)</label>
-                                <input type="tel" id="assocTelefone" placeholder="5511999999999" class="w-full px-4 py-2 rounded-lg input-field text-white">
-                                <span class="text-xs text-slate-500 mt-1 block">Formato: 55 + DDD + Número</span>
-                            </div>
-                            <button type="submit" class="w-full py-2 rounded-lg btn-primary text-slate-900 font-semibold">
-                                Cadastrar Associado
-                            </button>
-                        </form>
+                            <div class="text-2xl font-bold text-white font-mono" id="dashTotalVales">R$ 0,00</div>
+                            <div class="text-xs text-slate-500 mt-1">Dívidas a receber</div>
+                        </div>
                     </div>
 
-                    <div class="lg:col-span-2 glass-card rounded-2xl p-6">
-                        <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                            <i class="ph ph-users text-cyan-400"></i>
-                            Associados Cadastrados
-                        </h3>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="glass-card rounded-2xl p-6">
+                            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                <i class="ph ph-chart-line-up text-gold-400"></i>
+                                Últimos Navios Finalizados
+                            </h3>
+                            <div id="dashUltimosNavios" class="space-y-3">
+                                <div class="text-center py-8 text-slate-500">Carregando...</div>
+                            </div>
+                        </div>
+
+                        <div class="glass-card rounded-2xl p-6">
+                            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                <i class="ph ph-wallet text-cyan-400"></i>
+                                Saldos dos Associados
+                            </h3>
+                            <div class="overflow-y-auto max-h-96 space-y-2" id="dashSaldosAssociados">
+                                <div class="text-center py-8 text-slate-500">Carregando...</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Seção Navios -->
+                <section id="section-navios" class="section hidden fade-in space-y-6">
+                    <div class="flex items-center justify-between flex-wrap gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                                <i class="ph ph-ship text-gold-400"></i>
+                                Gestão de Navios
+                            </h2>
+                            <p class="text-slate-400 text-sm mt-1">Gerencie embarcações, turnos e produção</p>
+                        </div>
+                        <button onclick="abrirModalNovoNavio()" class="px-4 py-2 rounded-lg btn-primary text-slate-900 font-semibold flex items-center gap-2">
+                            <i class="ph ph-plus"></i>
+                            Novo Navio
+                        </button>
+                    </div>
+
+                    <!-- Filtros de Status -->
+                    <div class="flex gap-2 overflow-x-auto pb-2">
+                        <button onclick="filtrarNavios('todos')" class="filtro-navio active px-4 py-2 rounded-lg bg-slate-800 text-white text-sm font-medium border border-slate-700 hover:border-gold-400 transition-colors whitespace-nowrap" data-filtro="todos">Todos</button>
+                        <button onclick="filtrarNavios('aberto')" class="filtro-navio px-4 py-2 rounded-lg bg-slate-800/50 text-slate-400 text-sm font-medium border border-slate-700 hover:border-emerald-400 hover:text-emerald-400 transition-colors whitespace-nowrap" data-filtro="aberto">Em Aberto</button>
+                        <button onclick="filtrarNavios('fechado')" class="filtro-navio px-4 py-2 rounded-lg bg-slate-800/50 text-slate-400 text-sm font-medium border border-slate-700 hover:border-amber-400 hover:text-amber-400 transition-colors whitespace-nowrap" data-filtro="fechado">Aguardando Pagamento</button>
+                        <button onclick="filtrarNavios('pago')" class="filtro-navio px-4 py-2 rounded-lg bg-slate-800/50 text-slate-400 text-sm font-medium border border-slate-700 hover:border-blue-400 hover:text-blue-400 transition-colors whitespace-nowrap" data-filtro="pago">Pagos</button>
+                    </div>
+
+                    <div id="listaNavios" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        <!-- Cards de navios serão inseridos aqui -->
+                    </div>
+                </section>
+
+                <!-- Seção Associados -->
+                <section id="section-associados" class="section hidden fade-in space-y-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="glass-card rounded-2xl p-6">
+                            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                <i class="ph ph-user-plus text-gold-400"></i>
+                                Cadastrar Associado
+                            </h3>
+                            <form id="formAssociado" class="space-y-4">
+                                <div>
+                                    <label class="block text-sm text-slate-400 mb-1">Nome Completo</label>
+                                    <input type="text" id="assocNome" required class="w-full px-4 py-2 rounded-lg input-field text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-slate-400 mb-1">Nº de Registro</label>
+                                    <input type="text" id="assocRegistro" required class="w-full px-4 py-2 rounded-lg input-field text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-slate-400 mb-1">Turno Padrão</label>
+                                    <select id="assocTurnoPadrao" required class="w-full px-4 py-2 rounded-lg input-field text-white bg-slate-900">
+                                        <option value="07x15">07x15 (Manhã)</option>
+                                        <option value="15x23">15x23 (Tarde/Noite)</option>
+                                        <option value="23x07">23x07 (Madrugada)</option>
+                                        <option value="forca_supletiva">Força Supletiva</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-slate-400 mb-1">Telefone (WhatsApp)</label>
+                                    <input type="tel" id="assocTelefone" placeholder="5511999999999" class="w-full px-4 py-2 rounded-lg input-field text-white">
+                                    <span class="text-xs text-slate-500 mt-1 block">Formato: 55 + DDD + Número</span>
+                                </div>
+                                <button type="submit" class="w-full py-2 rounded-lg btn-primary text-slate-900 font-semibold">
+                                    Cadastrar Associado
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="lg:col-span-2 glass-card rounded-2xl p-6">
+                            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                <i class="ph ph-users text-cyan-400"></i>
+                                Associados Cadastrados
+                            </h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead class="text-xs font-semibold text-slate-400 uppercase bg-slate-800/50">
+                                        <tr>
+                                            <th class="px-4 py-3 rounded-l-lg">Registro</th>
+                                            <th class="px-4 py-3">Nome</th>
+                                            <th class="px-4 py-3">Turno</th>
+                                            <th class="px-4 py-3">Contato</th>
+                                            <th class="px-4 py-3 text-right">Saldo Real</th>
+                                            <th class="px-4 py-3 text-right">Vales</th>
+                                            <th class="px-4 py-3 text-right">Vistorias</th>
+                                            <th class="px-4 py-3 rounded-r-lg text-center">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabelaAssociados" class="divide-y divide-slate-800">
+                                        <!-- Dados inseridos via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Seção Lançamentos -->
+                <section id="section-lancamentos" class="section hidden fade-in space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Vale (Débito) -->
+                        <div class="glass-card rounded-2xl p-6 border-l-4 border-red-500">
+                            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                <i class="ph ph-minus-circle text-red-400"></i>
+                                Lançar Vale (Adiantamento)
+                            </h3>
+                            <form id="formVale" class="space-y-4">
+                                <div>
+                                    <label class="block text-sm text-slate-400 mb-1">Associado</label>
+                                    <select id="valeAssociado" required class="w-full px-4 py-2 rounded-lg input-field text-white bg-slate-900">
+                                        <option value="">Selecione...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-slate-400 mb-1">Valor (R$)</label>
+                                    <input type="number" id="valeValor" step="0.01" min="0.01" required class="w-full px-4 py-2 rounded-lg input-field text-white font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-slate-400 mb-1">Motivo/Observação</label>
+                                    <input type="text" id="valeDescricao" placeholder="Ex: Adiantamento quinzenal" class="w-full px-4 py-2 rounded-lg input-field text-white">
+                                </div>
+                                <div class="text-xs text-amber-400/80 bg-amber-400/10 p-3 rounded-lg border border-amber-400/20">
+                                    <i class="ph ph-info mr-1"></i>
+                                    O vale será adicionado aos "Vales Pendentes" do associado e descontado no próximo pagamento.
+                                </div>
+                                <button type="submit" class="w-full py-2 rounded-lg bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 font-semibold transition-colors">
+                                    Registrar Vale Pendente
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Vistoria (Crédito) -->
+                        <div class="glass-card rounded-2xl p-6 border-l-4 border-emerald-500">
+                            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                <i class="ph ph-plus-circle text-emerald-400"></i>
+                                Lançar Vistoria
+                            </h3>
+                            <form id="formVistoria" class="space-y-4">
+                                <div>
+                                    <label class="block text-sm text-slate-400 mb-1">Associado</label>
+                                    <select id="vistoriaAssociado" required class="w-full px-4 py-2 rounded-lg input-field text-white bg-slate-900">
+                                        <option value="">Selecione...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-slate-400 mb-1">Valor (R$)</label>
+                                    <input type="number" id="vistoriaValor" step="0.01" min="0" required class="w-full px-4 py-2 rounded-lg input-field text-white font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-slate-400 mb-1">Descrição</label>
+                                    <input type="text" id="vistoriaDescricao" placeholder="Ex: Vistoria container X" class="w-full px-4 py-2 rounded-lg input-field text-white">
+                                </div>
+                                <div class="text-xs text-emerald-400/80 bg-emerald-400/10 p-3 rounded-lg border border-emerald-400/20">
+                                    <i class="ph ph-info mr-1"></i>
+                                    A vistoria será adicionada às "Vistorias Pendentes" e paga no fechamento do navio.
+                                </div>
+                                <button type="submit" class="w-full py-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 font-semibold transition-colors">
+                                    Registrar Vistoria Pendente
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-6">
+                        <h3 class="text-lg font-semibold text-white mb-4">Histórico de Lançamentos</h3>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left">
                                 <thead class="text-xs font-semibold text-slate-400 uppercase bg-slate-800/50">
                                     <tr>
-                                        <th class="px-4 py-3 rounded-l-lg">Registro</th>
-                                        <th class="px-4 py-3">Nome</th>
-                                        <th class="px-4 py-3">Turno</th>
-                                        <th class="px-4 py-3">Telefone</th>
-                                        <th class="px-4 py-3">Saldo</th>
-                                        <th class="px-4 py-3 rounded-r-lg text-right">Ações</th>
+                                        <th class="px-4 py-3 rounded-l-lg">Data</th>
+                                        <th class="px-4 py-3">Tipo</th>
+                                        <th class="px-4 py-3">Associado</th>
+                                        <th class="px-4 py-3">Descrição</th>
+                                        <th class="px-4 py-3 rounded-r-lg text-right">Valor</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tabelaAssociados" class="divide-y divide-slate-800">
-                                    <!-- Dados inseridos via JS -->
+                                <tbody id="tabelaLancamentos" class="divide-y divide-slate-800">
+                                    <!-- Dados via JS -->
                                 </tbody>
                             </table>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            <!-- Seção Lançamentos -->
-            <section id="section-lancamentos" class="section hidden fade-in space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Vale (Débito) - Agora vai para valesPendentes -->
-                    <div class="glass-card rounded-2xl p-6 border-l-4 border-red-500">
-                        <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                            <i class="ph ph-minus-circle text-red-400"></i>
-                            Lançar Vale (Adiantamento)
-                        </h3>
-                        <form id="formVale" class="space-y-4">
+                <!-- Seção Fechamento Semanal (Nova) -->
+                <section id="section-fechamento" class="section hidden fade-in space-y-6">
+                    <div class="glass-card rounded-2xl p-6 border-l-4 border-green-500">
+                        <div class="flex items-center justify-between flex-wrap gap-4 mb-6">
                             <div>
-                                <label class="block text-sm text-slate-400 mb-1">Associado</label>
-                                <select id="valeAssociado" required class="w-full px-4 py-2 rounded-lg input-field text-white bg-slate-900">
-                                    <option value="">Selecione...</option>
-                                </select>
+                                <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                                    <i class="ph ph-whatsapp-logo text-green-400"></i>
+                                    Folha de Pagamento Semanal
+                                </h2>
+                                <p class="text-slate-400 text-sm mt-1">Disparo de extratos via WhatsApp (Evolution API)</p>
                             </div>
-                            <div>
-                                <label class="block text-sm text-slate-400 mb-1">Valor (R$)</label>
-                                <input type="number" id="valeValor" step="0.01" min="0.01" required class="w-full px-4 py-2 rounded-lg input-field text-white font-mono">
+                            <div class="flex gap-3">
+                                <input type="week" id="semanaFechamento" class="px-4 py-2 rounded-lg input-field text-white font-mono">
+                                <button onclick="carregarFechamentoSemanal()" class="px-4 py-2 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/20 font-semibold flex items-center gap-2">
+                                    <i class="ph ph-magnifying-glass"></i>
+                                    Buscar
+                                </button>
                             </div>
-                            <div>
-                                <label class="block text-sm text-slate-400 mb-1">Motivo/Observação</label>
-                                <input type="text" id="valeDescricao" placeholder="Ex: Adiantamento quinzenal" class="w-full px-4 py-2 rounded-lg input-field text-white">
+                        </div>
+
+                        <div id="resumoFechamento" class="mb-6 hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                <div class="p-4 rounded-xl bg-slate-800/50 border border-slate-700">
+                                    <div class="text-sm text-slate-400">Total em Pagamentos</div>
+                                    <div class="text-2xl font-mono font-bold text-gold-400" id="fechTotalPagamentos">R$ 0,00</div>
+                                </div>
+                                <div class="p-4 rounded-xl bg-slate-800/50 border border-slate-700">
+                                    <div class="text-sm text-slate-400">Associados a Notificar</div>
+                                    <div class="text-2xl font-mono font-bold text-cyan-400" id="fechTotalAssociados">0</div>
+                                </div>
+                                <div class="p-4 rounded-xl bg-slate-800/50 border border-slate-700">
+                                    <div class="text-sm text-slate-400">Status</div>
+                                    <div class="text-lg font-semibold text-emerald-400" id="fechStatus">Pronto para envio</div>
+                                </div>
                             </div>
-                            <div class="text-xs text-amber-400/80 bg-amber-400/10 p-3 rounded-lg border border-amber-400/20">
-                                <i class="ph ph-info mr-1"></i>
-                                O vale será registrado como pendente e descontado no próximo pagamento de navio.
+
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead class="text-xs font-semibold text-slate-400 uppercase bg-slate-800/50">
+                                        <tr>
+                                            <th class="px-4 py-3 rounded-l-lg">Associado</th>
+                                            <th class="px-4 py-3 text-right">Navios</th>
+                                            <th class="px-4 py-3 text-right">Vistorias</th>
+                                            <th class="px-4 py-3 text-right">Vales Desc.</th>
+                                            <th class="px-4 py-3 text-right">Líquido</th>
+                                            <th class="px-4 py-3 text-center">Status</th>
+                                            <th class="px-4 py-3 rounded-r-lg text-center">Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabelaFechamento" class="divide-y divide-slate-800">
+                                        <!-- Dados via JS -->
+                                    </tbody>
+                                </table>
                             </div>
-                            <button type="submit" class="w-full py-2 rounded-lg bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 font-semibold transition-colors">
-                                Registrar Vale Pendente
+
+                            <div class="mt-6 flex justify-end">
+                                <button onclick="dispararTodosWhatsApp()" id="btnDispararTodos" class="px-6 py-3 rounded-xl bg-green-500 text-slate-900 font-bold flex items-center gap-2 hover:bg-green-400 transition-colors">
+                                    <i class="ph ph-whatsapp-logo text-xl"></i>
+                                    Disparar Todos os Extratos
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="emptyFechamento" class="text-center py-12 text-slate-500">
+                            <i class="ph ph-calendar-blank text-4xl mb-3"></i>
+                            <p>Selecione uma semana para visualizar o fechamento</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Seção Configurações -->
+                <section id="section-config" class="section hidden fade-in space-y-6">
+                    <form id="formConfig" class="space-y-6">
+                        
+                        <!-- Taxas de Turnos -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <!-- 07X15 -->
+                            <div class="glass-card rounded-2xl p-6 border-t-4 border-blue-400">
+                                <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                    <i class="ph ph-sun text-blue-400"></i>
+                                    07X15 (MANHÃ)
+                                </h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm text-slate-400 mb-1">Dia Normal (R$)</label>
+                                        <input type="number" id="taxa_07x15_normal" step="0.01" required class="w-full px-4 py-2 rounded-lg input-field text-white font-mono">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-slate-400 mb-1">Feriado (R$)</label>
+                                        <input type="number" id="taxa_07x15_feriado" step="0.01" required class="w-full px-4 py-2 rounded-lg input-field text-white font-mono">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 15X23 -->
+                            <div class="glass-card rounded-2xl p-6 border-t-4 border-amber-400 lg:col-span-1">
+                                <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                    <i class="ph ph-sunset text-amber-400"></i>
+                                    15X23 (TARDE/NOITE)
+                                </h3>
+                                
+                                <div class="mb-4 p-3 rounded-lg bg-slate-800/50 border border-slate-700">
+                                    <div class="text-xs text-gold-400 font-semibold mb-2 uppercase tracking-wider">Período 15h-19h</div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="block text-xs text-slate-400 mb-1">Normal</label>
+                                            <input type="number" id="taxa_15x23_15_19_normal" step="0.01" required class="w-full px-2 py-1.5 rounded input-field text-white font-mono text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-slate-400 mb-1">Feriado</label>
+                                            <input type="number" id="taxa_15x23_15_19_feriado" step="0.01" required class="w-full px-2 py-1.5 rounded input-field text-white font-mono text-sm">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="p-3 rounded-lg bg-slate-800/50 border border-slate-700">
+                                    <div class="text-xs text-purple-400 font-semibold mb-2 uppercase tracking-wider">Período 19h-23h</div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="block text-xs text-slate-400 mb-1">Normal</label>
+                                            <input type="number" id="taxa_15x23_19_23_normal" step="0.01" required class="w-full px-2 py-1.5 rounded input-field text-white font-mono text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-slate-400 mb-1">Feriado</label>
+                                            <input type="number" id="taxa_15x23_19_23_feriado" step="0.01" required class="w-full px-2 py-1.5 rounded input-field text-white font-mono text-sm">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 23X07 -->
+                            <div class="glass-card rounded-2xl p-6 border-t-4 border-purple-400">
+                                <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                    <i class="ph ph-moon-stars text-purple-400"></i>
+                                    23X07 (MADRUGADA)
+                                </h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm text-slate-400 mb-1">Dia Normal (R$)</label>
+                                        <input type="number" id="taxa_23x07_normal" step="0.01" required class="w-full px-4 py-2 rounded-lg input-field text-white font-mono">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-slate-400 mb-1">Feriado (R$)</label>
+                                        <input type="number" id="taxa_23x07_feriado" step="0.01" required class="w-full px-4 py-2 rounded-lg input-field text-white font-mono">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Configurações Gerais -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="glass-card rounded-2xl p-6">
+                                <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                    <i class="ph ph-sliders-horizontal text-cyan-400"></i>
+                                    Configurações Gerais
+                                </h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm text-slate-400 mb-1">Valor Padrão Vistoria (R$)</label>
+                                        <input type="number" id="valor_vistoria" step="0.01" required class="w-full px-4 py-2 rounded-lg input-field text-white font-mono">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-slate-400 mb-1">Desconto Sindical (%)</label>
+                                        <input type="number" id="desconto_sindical" step="0.01" required class="w-full px-4 py-2 rounded-lg input-field text-white font-mono">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="glass-card rounded-2xl p-6">
+                                <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                    <i class="ph ph-whatsapp-logo text-green-400"></i>
+                                    Integração WhatsApp (Evolution API)
+                                </h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm text-slate-400 mb-1">URL da API</label>
+                                        <input type="url" id="api_url" placeholder="https://suaapi.com.br" class="w-full px-4 py-2 rounded-lg input-field text-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-slate-400 mb-1">Chave API (ApiKey)</label>
+                                        <input type="text" id="api_key" placeholder="Sua chave de acesso" class="w-full px-4 py-2 rounded-lg input-field text-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-slate-400 mb-1">Instância Padrão</label>
+                                        <input type="text" id="api_instance" placeholder="sindicato" class="w-full px-4 py-2 rounded-lg input-field text-white">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button type="submit" class="px-8 py-3 rounded-xl btn-primary text-slate-900 font-bold flex items-center gap-2">
+                                <i class="ph ph-floppy-disk"></i>
+                                Salvar Configurações
                             </button>
-                        </form>
-                    </div>
-
-                    <!-- Vistoria (Crédito) -->
-                    <div class="glass-card rounded-2xl p-6 border-l-4 border-emerald-500">
-                        <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                            <i class="ph ph-plus-circle text-emerald-400"></i>
-                            Lançar Vistoria
-                        </h3>
-                        <form id="formVistoria" class="space-y-4">
-                            <div>
-                                <label class="block text-sm text-slate-400 mb-1">Associado</label>
-                                <select id="vistoriaAssociado" required class="w-full px-4 py-2 rounded-lg input-field text-white bg-slate-900">
-                                    <option value="">Selecione...</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm text-slate-400 mb-1">Valor (R$)</label>
-                                <input type="number" id="vistoriaValor" step="0.01" min="0" required class="w-full px-4 py-2 rounded-lg input-field text-white font-mono">
-                            </div>
-                            <div>
-                                <label class="block text-sm text-slate-400 mb-1">Descrição</label>
-                                <input type="text" id="vistoriaDescricao" placeholder="Ex: Vistoria container X" class="w-full px-4 py-2 rounded-lg input-field text-white">
-                            </div>
-                            <button type="submit" class="w-full py-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 font-semibold transition-colors">
-                                Registrar Crédito (Vistoria)
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                <div class="glass-card rounded-2xl p-6">
-                    <h3 class="text-lg font-semibold text-white mb-4">Histórico de Lançamentos</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead class="text-xs font-semibold text-slate-400 uppercase bg-slate-800/50">
-                                <tr>
-                                    <th class="px-4 py-3 rounded-l-lg">Data</th>
-                                    <th class="px-4 py-3">Tipo</th>
-                                    <th class="px-4 py-3">Associado</th>
-                                    <th class="px-4 py-3">Descrição</th>
-                                    <th class="px-4 py-3 rounded-r-lg text-right">Valor</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabelaLancamentos" class="divide-y divide-slate-800">
-                                <!-- Dados via JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Seção Configurações -->
-            <section id="section-config" class="section hidden fade-in space-y-6">
-                <form id="formConfig" class="space-y-6">
-                    
-                    <!-- Taxas de Turnos -->
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <!-- 07X15 -->
-                        <div class="glass-card rounded-2xl p-6 border-t-4 border-blue-400">
-                            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                                <i class="ph ph-sun text-blue-400"></i>
-                                07X15 (MANHÃ)
-                            </h3>
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="block text-sm text-slate-400 mb-1">Dia Normal (R$)</label>
-                                    <input type="number" id="taxa_07x15_normal" step="0.01" required class="w-full px-4 py-2 rounded-lg input-field text-white font-mono">
-                                </div>
-                                <div>
-                                    <label class="block text-sm text-slate-400 mb-1">Feriado (R$)</label>
-                                    <input type="number" id="taxa_07x15_feriado" step="0.01" required class="w-full px-4 py-2 rounded-lg input-field text-white font-mono">
-                                </div>
-                            </div>
                         </div>
-
-                        <!-- 15X23 -->
-                        <div class="glass-card rounded-2xl p-6 border-t-4 border-amber-400 lg:col-span-1">
-                            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                                <i class="ph ph-sunset text-amber-400"></i>
-                                15X23 (TARDE/NOITE)
-                            </h3>
-                            
-                            <div class="mb-4 p-3 rounded-lg bg-slate-800/50 border border-slate-700">
-                                <div class="text-xs text-gold-400 font-semibold mb-2 uppercase tracking-wider">Período 15h-19h</div>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label class="block text-xs text-slate-400 mb-1">Normal</label>
-                                        <input type="number" id="taxa_15x23_15_19_normal" step="0.01" required class="w-full px-2 py-1.5 rounded input-field text-white font-mono text-sm">
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs text-slate-400 mb-1">Feriado</label>
-                                        <input type="number" id="taxa_15x23_15_19_feriado" step="0.01" required class="w-full px-2 py-1.5 rounded input-field text-white font-mono text-sm">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="p-3 rounded-lg bg-slate-800/50 border border-slate-700">
-                                <div class="text-xs text-purple-400 font-semibold mb-2 uppercase tracking-wider">Período 19h-23h</div>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label class="block text-xs text-slate-400 mb-1">Normal</label>
-                                        <input type="number" id="taxa_15x23_19_23_normal" step="0.01" required class="w-full px-2 py-1.5 rounded input-field text-white font-mono text-sm">
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs text-slate-400 mb-1">Feriado</label>
-                                        <input type="number" id="taxa_15x23_19_23_feriado" step="0.01" required class="w-full px-2 py-1.5 rounded input-field text-white font-mono text-sm">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 23X07 -->
-                        <div class="glass-card rounded-2xl p-6 border-t-4 border-purple-400">
-                            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                                <i class="ph ph-moon-stars text-purple-400"></i>
-                                23X07 (MADRUGADA)
-                            </h3>
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="block text-sm text-slate-400 mb-1">Dia Normal (R$)</label>
-                                    <input type="number" id="taxa_23x07_normal" step="0.01" required class="w-full px-4 py-2 rounded-lg input-field text-white font-mono">
-                                </div>
-                                <div>
-                                    <label class="block text-sm text-slate-400 mb-1">Feriado (R$)</label>
-                                    <input type="number" id="taxa_23x07_feriado" step="0.01" required class="w-full px-4 py-2 rounded-lg input-field text-white font-mono">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Configurações Gerais -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="glass-card rounded-2xl p-6">
-                            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                                <i class="ph ph-sliders-horizontal text-cyan-400"></i>
-                                Configurações Gerais
-                            </h3>
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="block text-sm text-slate-400 mb-1">Valor Padrão Vistoria (R$)</label>
-                                    <input type="number" id="valor_vistoria" step="0.01" required class="w-full px-4 py-2 rounded-lg input-field text-white font-mono">
-                                </div>
-                                <div>
-                                    <label class="block text-sm text-slate-400 mb-1">Desconto Sindical (%)</label>
-                                    <input type="number" id="desconto_sindical" step="0.01" required class="w-full px-4 py-2 rounded-lg input-field text-white font-mono">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="glass-card rounded-2xl p-6">
-                            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                                <i class="ph ph-whatsapp-logo text-green-400"></i>
-                                Integração WhatsApp (Evolution API)
-                            </h3>
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="block text-sm text-slate-400 mb-1">URL da API</label>
-                                    <input type="url" id="api_url" placeholder="https://suaapi.com.br" class="w-full px-4 py-2 rounded-lg input-field text-white">
-                                </div>
-                                <div>
-                                    <label class="block text-sm text-slate-400 mb-1">Chave API (ApiKey)</label>
-                                    <input type="text" id="api_key" placeholder="Sua chave de acesso" class="w-full px-4 py-2 rounded-lg input-field text-white">
-                                </div>
-                                <div>
-                                    <label class="block text-sm text-slate-400 mb-1">Telefone Padrão de Destino</label>
-                                    <input type="text" id="telefone_padrao" placeholder="5511999999999" class="w-full px-4 py-2 rounded-lg input-field text-white">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-end">
-                        <button type="submit" class="px-8 py-3 rounded-xl btn-primary text-slate-900 font-bold flex items-center gap-2">
-                            <i class="ph ph-floppy-disk"></i>
-                            Salvar Configurações
-                        </button>
-                    </div>
-                </form>
-            </section>
+                    </form>
+                </section>
+            </div>
         </main>
     </div>
 
@@ -690,11 +818,104 @@
         </div>
     </div>
 
-    <!-- Modal Adicionar Turno -->
-    <div id="modalTurno" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <!-- Modal Detalhes do Navio (Full Screen) -->
+    <div id="modalDetalhesNavio" class="modal-fullscreen hidden">
+        <div class="min-h-screen p-4 lg:p-8">
+            <div class="max-w-7xl mx-auto">
+                <!-- Header do Modal -->
+                <div class="flex items-center justify-between mb-8 sticky top-0 glass-panel p-4 rounded-xl z-10">
+                    <div class="flex items-center gap-4">
+                        <button onclick="fecharModal('modalDetalhesNavio')" class="w-10 h-10 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+                            <i class="ph ph-arrow-left text-xl"></i>
+                        </button>
+                        <div>
+                            <div class="flex items-center gap-3">
+                                <h2 class="text-2xl font-bold text-white" id="detalheNavioNome">Nome do Navio</h2>
+                                <button onclick="editarNomeNavio()" class="text-slate-400 hover:text-gold-400 transition-colors">
+                                    <i class="ph ph-pencil"></i>
+                                </button>
+                            </div>
+                            <span id="detalheNavioStatus" class="text-sm mt-1 inline-block">Status</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="excluirNavioAtual()" id="btnExcluirNavio" class="px-4 py-2 rounded-lg bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 font-semibold flex items-center gap-2">
+                            <i class="ph ph-trash"></i>
+                            Excluir Navio
+                        </button>
+                        <button onclick="abrirModalAdicionarTurno()" id="btnAddTurno" class="px-4 py-2 rounded-lg btn-primary text-slate-900 font-semibold flex items-center gap-2">
+                            <i class="ph ph-plus"></i>
+                            Adicionar Turno
+                        </button>
+                        <button onclick="fecharNavioAtual()" id="btnFecharNavio" class="hidden px-4 py-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 font-semibold flex items-center gap-2">
+                            <i class="ph ph-lock-key"></i>
+                            Fechar Navio
+                        </button>
+                        <button onclick="abrirModalAutorizacao()" id="btnAutorizarPagamento" class="hidden px-4 py-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20 font-semibold flex items-center gap-2">
+                            <i class="ph ph-currency-dollar"></i>
+                            Autorizar Pagamento
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Resumo Financeiro -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="glass-card rounded-2xl p-6 border-l-4 border-gold-400">
+                        <div class="text-sm text-slate-400 mb-1">Total Bruto</div>
+                        <div class="text-3xl font-mono font-bold text-white" id="detalheTotalBruto">R$ 0,00</div>
+                    </div>
+                    <div class="glass-card rounded-2xl p-6 border-l-4 border-cyan-400">
+                        <div class="text-sm text-slate-400 mb-1">Total Líquido</div>
+                        <div class="text-3xl font-mono font-bold text-cyan-400" id="detalheTotalLiquido">R$ 0,00</div>
+                        <div class="text-xs text-slate-500 mt-1">Total após desconto sindical</div>
+                    </div>
+                    <div class="glass-card rounded-2xl p-6 border-l-4 border-emerald-400">
+                        <div class="text-sm text-slate-400 mb-1">Média por Conferente</div>
+                        <div class="text-3xl font-mono font-bold text-emerald-400" id="detalheMediaConferente">R$ 0,00</div>
+                    </div>
+                </div>
+
+                <!-- Lista de Turnos -->
+                <div class="glass-card rounded-2xl overflow-hidden">
+                    <div class="p-6 border-b border-slate-700/50">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <i class="ph ph-clock text-gold-400"></i>
+                            Turnos Registrados
+                        </h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="text-xs font-semibold text-slate-400 uppercase bg-slate-800/30">
+                                <tr>
+                                    <th class="px-6 py-4">Data</th>
+                                    <th class="px-6 py-4">Turno</th>
+                                    <th class="px-6 py-4">Tipo</th>
+                                    <th class="px-6 py-4">Produção</th>
+                                    <th class="px-6 py-4">Conferentes</th>
+                                    <th class="px-6 py-4 text-right">Valor Bruto</th>
+                                    <th class="px-6 py-4 text-right">Valor/Conf.</th>
+                                    <th class="px-6 py-4 text-center" id="colAcoesTurno">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaTurnosNavio" class="divide-y divide-slate-800">
+                                <!-- Turnos via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="emptyTurnos" class="text-center py-12 text-slate-500 hidden">
+                        <i class="ph ph-clock text-4xl mb-3"></i>
+                        <p>Nenhum turno registrado</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Adicionar/Editar Turno -->
+    <div id="modalTurno" class="fixed inset-0 z-[60] hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="glass-panel rounded-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-6">
-                <h3 class="text-xl font-bold text-white">Adicionar Turno</h3>
+                <h3 class="text-xl font-bold text-white" id="tituloModalTurno">Adicionar Turno</h3>
                 <button onclick="fecharModal('modalTurno')" class="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
                     <i class="ph ph-x"></i>
                 </button>
@@ -702,6 +923,7 @@
             
             <form id="formTurno" class="space-y-4">
                 <input type="hidden" id="turnoNavioId">
+                <input type="hidden" id="turnoEditIndex" value="-1">
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
@@ -759,7 +981,7 @@
                     </div>
                     <button type="button" id="btnMostrarTodosTurno" onclick="toggleMostrarTodosConferentes()" class="hidden mt-2 text-xs text-slate-400 hover:text-gold-400 flex items-center gap-1 transition-colors">
                         <i class="ph ph-eye"></i>
-                        Mostrar conferentes de outros turnos (Exceção/Folga)
+                        Mostrar conferentes de outros turnos (Exceção/Força Supletiva)
                     </button>
                 </div>
 
@@ -786,36 +1008,51 @@
 
                 <div class="flex gap-3 pt-4">
                     <button type="button" onclick="fecharModal('modalTurno')" class="flex-1 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-700 transition-colors">Cancelar</button>
-                    <button type="submit" class="flex-1 py-2 rounded-lg btn-primary text-slate-900 font-semibold">Adicionar Turno</button>
+                    <button type="submit" class="flex-1 py-2 rounded-lg btn-primary text-slate-900 font-semibold" id="btnSubmitTurno">Adicionar Turno</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Modal de Autorização de Pagamento (Novo) -->
-    <div id="modalAutorizarPagamento" class="fixed inset-0 z-50 hidden bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="glass-panel rounded-2xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between mb-6">
+    <!-- Modal de Autorização de Pagamento -->
+    <div id="modalAutorizarPagamento" class="fixed inset-0 z-[70] hidden bg-slate-950/95 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-panel rounded-2xl w-full max-w-5xl p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6 sticky top-0 glass-panel p-4 -m-6 mb-6 rounded-t-2xl z-10">
                 <div>
-                    <h3 class="text-xl font-bold text-white">Autorizar Pagamento</h3>
-                    <p class="text-sm text-slate-400 mt-1">Configure os descontos de vale para cada conferente</p>
+                    <h3 class="text-xl font-bold text-white">Autorizar Pagamento do Navio</h3>
+                    <p class="text-sm text-slate-400 mt-1" id="nomeNavioPagamento">Configure os descontos e pagamentos</p>
                 </div>
                 <button onclick="fecharModal('modalAutorizarPagamento')" class="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
                     <i class="ph ph-x"></i>
                 </button>
             </div>
             
-            <div id="conteudoAutorizacao" class="space-y-4">
-                <!-- Lista de associados será inserida aqui -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="text-xs font-semibold text-slate-400 uppercase bg-slate-800/50">
+                        <tr>
+                            <th class="px-4 py-3 rounded-l-lg">Associado</th>
+                            <th class="px-4 py-3 text-right">Valor Navio</th>
+                            <th class="px-4 py-3 text-right text-amber-400">Vales Pendentes</th>
+                            <th class="px-4 py-3 text-right text-emerald-400">Vistorias Pendentes</th>
+                            <th class="px-4 py-3 text-right">Descontar Vale</th>
+                            <th class="px-4 py-3 text-right">Pagar Vistoria</th>
+                            <th class="px-4 py-3 rounded-r-lg text-right text-gold-400">Líquido a Receber</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaAutorizacaoPagamento" class="divide-y divide-slate-800">
+                        <!-- Lista via JS -->
+                    </tbody>
+                </table>
             </div>
 
-            <div class="mt-6 pt-4 border-t border-slate-700 flex justify-between items-center">
+            <div class="mt-6 pt-4 border-t border-slate-700 flex justify-between items-center sticky bottom-0 glass-panel p-4 -m-6 mt-6 rounded-b-2xl">
                 <div class="text-sm text-slate-400">
-                    Total a Pagar: <span id="totalPagamento" class="text-white font-mono font-bold">R$ 0,00</span>
+                    Total a Pagar: <span id="totalPagamento" class="text-white font-mono font-bold text-xl">R$ 0,00</span>
                 </div>
                 <div class="flex gap-3">
                     <button onclick="fecharModal('modalAutorizarPagamento')" class="px-6 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-700 transition-colors">Cancelar</button>
-                    <button onclick="confirmarPagamentoComDescontos()" class="px-6 py-2 rounded-lg btn-primary text-slate-900 font-semibold flex items-center gap-2">
+                    <button onclick="confirmarPagamentoCompleto()" class="px-6 py-2 rounded-lg btn-primary text-slate-900 font-semibold flex items-center gap-2">
                         <i class="ph ph-check"></i>
                         Confirmar Pagamento
                     </button>
@@ -824,25 +1061,14 @@
         </div>
     </div>
 
-    <!-- Modal Detalhes do Navio (para PDF) -->
-    <div id="modalDetalhesNavio" class="fixed inset-0 z-50 hidden bg-slate-950/90 overflow-y-auto">
-        <div class="min-h-screen px-4 py-8 flex items-center justify-center">
-            <div class="glass-panel rounded-2xl w-full max-w-4xl p-8 relative">
-                <button onclick="fecharModal('modalDetalhesNavio')" class="absolute top-4 right-4 w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center z-10">
-                    <i class="ph ph-x"></i>
-                </button>
-                
-                <div id="conteudoPDF" class="bg-white text-slate-900 p-8 rounded-xl">
-                    <!-- Conteúdo será preenchido para o PDF -->
-                </div>
-
-                <div class="flex justify-end gap-3 mt-6">
-                    <button onclick="fecharModal('modalDetalhesNavio')" class="px-6 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-700">Fechar</button>
-                    <button onclick="baixarPDF()" class="px-6 py-2 rounded-lg btn-primary text-slate-900 font-semibold flex items-center gap-2">
-                        <i class="ph ph-download"></i>
-                        Baixar PDF
-                    </button>
-                </div>
+    <!-- Modal Editar Nome do Navio -->
+    <div id="modalEditarNomeNavio" class="fixed inset-0 z-[80] hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-panel rounded-2xl w-full max-w-md p-6">
+            <h3 class="text-xl font-bold text-white mb-4">Editar Nome do Navio</h3>
+            <input type="text" id="novoNomeNavioEdit" class="w-full px-4 py-3 rounded-lg input-field text-white mb-4" placeholder="Novo nome do navio">
+            <div class="flex gap-3">
+                <button onclick="fecharModal('modalEditarNomeNavio')" class="flex-1 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-700">Cancelar</button>
+                <button onclick="salvarNomeNavio()" class="flex-1 py-2 rounded-lg btn-primary text-slate-900 font-semibold">Salvar</button>
             </div>
         </div>
     </div>
@@ -863,13 +1089,15 @@
                 desconto_sindical: 18,
                 api_url: '',
                 api_key: '',
-                telefone_padrao: ''
+                api_instance: 'sindicato'
             },
             associados: [],
             navios: [],
             filtroNavios: 'todos',
             mostrarTodosConferentes: false,
-            navioPagamentoAtual: null // Guarda o navio sendo processado no modal de pagamento
+            navioAtual: null, // Navio sendo visualizado/detallhado
+            dadosPagamento: {}, // Cache para cálculos do modal de pagamento
+            fechamentoSemanal: {} // Dados do fechamento da semana
         };
 
         let unsubscribeNavios = null;
@@ -892,6 +1120,20 @@
             setupListeners();
             document.getElementById('novoNavioData').valueAsDate = new Date();
             document.getElementById('turnoData').valueAsDate = new Date();
+            
+            // Set semana atual no fechamento
+            const now = new Date();
+            const weekStart = new Date(now.setDate(now.getDate() - now.getDay() + 1));
+            const weekString = weekStart.toISOString().slice(0, 7) + '-W' + getWeekNumber(weekStart);
+            document.getElementById('semanaFechamento').value = weekString;
+        }
+
+        function getWeekNumber(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+            var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
+            return String(weekNo).padStart(2, '0');
         }
 
         function setupListeners() {
@@ -900,7 +1142,9 @@
                 state.associados = snapshot.docs.map(doc => ({ 
                     id: doc.id, 
                     ...doc.data(),
-                    valesPendentes: doc.data().valesPendentes || 0 // Garantir campo existe
+                    saldoReal: doc.data().saldoReal || 0,
+                    valesPendentes: doc.data().valesPendentes || 0,
+                    vistoriasPendentes: doc.data().vistoriasPendentes || 0
                 }));
                 renderAssociados();
                 updateSelectsAssociados();
@@ -912,6 +1156,9 @@
                 state.navios = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderNavios();
                 updateDashboard();
+                if (state.navioAtual) {
+                    atualizarViewDetalheNavio(state.navioAtual.id);
+                }
             });
         }
 
@@ -951,11 +1198,7 @@
             document.getElementById('desconto_sindical').value = cfg.desconto_sindical;
             document.getElementById('api_url').value = cfg.api_url || '';
             document.getElementById('api_key').value = cfg.api_key || '';
-            document.getElementById('telefone_padrao').value = cfg.telefone_padrao || '';
-            
-            document.getElementById('dashTaxaDesconto').textContent = cfg.desconto_sindical + '%';
-            document.getElementById('previewDesconto').textContent = cfg.desconto_sindical;
-            document.getElementById('vistoriaValor').value = cfg.valor_vistoria;
+            document.getElementById('api_instance').value = cfg.api_instance || 'sindicato';
         }
 
         document.getElementById('formConfig').addEventListener('submit', async (e) => {
@@ -986,7 +1229,7 @@
                 desconto_sindical: parseFloat(document.getElementById('desconto_sindical').value),
                 api_url: document.getElementById('api_url').value,
                 api_key: document.getElementById('api_key').value,
-                telefone_padrao: document.getElementById('telefone_padrao').value
+                api_instance: document.getElementById('api_instance').value || 'sindicato'
             };
             
             try {
@@ -1009,6 +1252,8 @@
             
             if (sectionName === 'navios') renderNavios();
             if (sectionName === 'associados') renderAssociados();
+            if (sectionName === 'lancamentos') loadLancamentos();
+            if (sectionName === 'fechamento') carregarFechamentoSemanal();
         };
 
         window.filtrarNavios = (filtro) => {
@@ -1025,7 +1270,7 @@
             renderNavios();
         };
 
-        // Associados - Atualizado com Turno Padrão
+        // Associados - Atualizado com 3 saldos
         document.getElementById('formAssociado').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -1042,8 +1287,9 @@
                     registro,
                     turnoPadrao,
                     telefone,
-                    saldo: 0,
-                    valesPendentes: 0, // Novo campo
+                    saldoReal: 0,
+                    valesPendentes: 0,
+                    vistoriasPendentes: 0,
                     createdAt: new Date().toISOString()
                 });
                 
@@ -1064,7 +1310,7 @@
                     '07x15': 'Manhã',
                     '15x23': 'Tarde/Noite',
                     '23x07': 'Madrugada',
-                    'folguista': 'Folguista'
+                    'forca_supletiva': 'Força Supletiva'
                 }[assoc.turnoPadrao] || assoc.turnoPadrao;
                 
                 const tr = document.createElement('tr');
@@ -1078,11 +1324,19 @@
                         </span>
                     </td>
                     <td class="px-4 py-3 text-slate-400 text-sm">${assoc.telefone || '-'}</td>
-                    <td class="px-4 py-3 font-mono font-bold ${assoc.saldo >= 0 ? 'text-emerald-400' : 'text-red-400'}">
-                        R$ ${(assoc.saldo || 0).toFixed(2)}
+                    <td class="px-4 py-3 text-right font-mono font-bold ${assoc.saldoReal >= 0 ? 'text-emerald-400' : 'text-red-400'}">
+                        R$ ${(assoc.saldoReal || 0).toFixed(2)}
                     </td>
-                    <td class="px-4 py-3 text-right">
-                        ${assoc.valesPendentes > 0 ? `<span class="text-xs text-amber-400 mr-2" title="Vales pendentes">(V: R$ ${assoc.valesPendentes.toFixed(2)})</span>` : ''}
+                    <td class="px-4 py-3 text-right font-mono text-amber-400">
+                        R$ ${(assoc.valesPendentes || 0).toFixed(2)}
+                    </td>
+                    <td class="px-4 py-3 text-right font-mono text-cyan-400">
+                        R$ ${(assoc.vistoriasPendentes || 0).toFixed(2)}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <button onclick="editarSaldoAssociado('${assoc.id}')" class="p-2 rounded-lg bg-gold-500/10 text-gold-400 hover:bg-gold-500/20 transition-colors mr-1" title="Ajustar Saldos">
+                            <i class="ph ph-currency-dollar"></i>
+                        </button>
                         <button onclick="deleteAssociado('${assoc.id}')" class="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">
                             <i class="ph ph-trash"></i>
                         </button>
@@ -1091,6 +1345,31 @@
                 tbody.appendChild(tr);
             });
         }
+
+        window.editarSaldoAssociado = async (id) => {
+            const assoc = state.associados.find(a => a.id === id);
+            if (!assoc) return;
+            
+            const novoSaldo = prompt(`Ajustar saldo REAL de ${assoc.nome}:\n\nValor atual: R$ ${assoc.saldoReal.toFixed(2)}\n\nDigite o novo valor (ou cancele para manter):`);
+            if (novoSaldo === null) return;
+            
+            const novoVale = prompt(`Ajustar VALES PENDENTES:\n\nValor atual: R$ ${assoc.valesPendentes.toFixed(2)}\n\nDigite o novo valor:`);
+            if (novoVale === null) return;
+            
+            const novoVistoria = prompt(`Ajustar VISTORIAS PENDENTES:\n\nValor atual: R$ ${assoc.vistoriasPendentes.toFixed(2)}\n\nDigite o novo valor:`);
+            if (novoVistoria === null) return;
+            
+            try {
+                await window.updateDoc(window.doc(window.db, 'associados', id), {
+                    saldoReal: parseFloat(novoSaldo) || 0,
+                    valesPendentes: parseFloat(novoVale) || 0,
+                    vistoriasPendentes: parseFloat(novoVistoria) || 0
+                });
+                alert('Saldos atualizados!');
+            } catch (error) {
+                alert('Erro ao atualizar');
+            }
+        };
 
         function updateSelectsAssociados() {
             const selects = [
@@ -1102,8 +1381,12 @@
                 const currentVal = select.value;
                 select.innerHTML = '<option value="">Selecione...</option>';
                 state.associados.forEach(assoc => {
-                    const infoVale = assoc.valesPendentes > 0 ? ` [Vale: R$ ${assoc.valesPendentes.toFixed(2)}]` : '';
-                    select.innerHTML += `<option value="${assoc.id}">${assoc.nome} (${assoc.registro})${infoVale}</option>`;
+                    const infoExtra = [];
+                    if (assoc.valesPendentes > 0) infoExtra.push(`Vale: R$ ${assoc.valesPendentes.toFixed(2)}`);
+                    if (assoc.vistoriasPendentes > 0) infoExtra.push(`Vist: R$ ${assoc.vistoriasPendentes.toFixed(2)}`);
+                    
+                    const extraText = infoExtra.length > 0 ? ` [${infoExtra.join(', ')}]` : '';
+                    select.innerHTML += `<option value="${assoc.id}">${assoc.nome} (${assoc.registro})${extraText}</option>`;
                 });
                 select.value = currentVal;
             });
@@ -1118,7 +1401,7 @@
             }
         };
 
-        // Lançamentos - Vales agora vão para valesPendentes, não saldo
+        // Lançamentos - Vales e Vistorias (ambos vão para pendentes)
         document.getElementById('formVale').addEventListener('submit', async (e) => {
             e.preventDefault();
             await processarLancamento('vale');
@@ -1147,7 +1430,7 @@
                     associadoId,
                     valor,
                     descricao,
-                    status: isVale ? 'pendente' : 'creditado', // Status para rastreamento
+                    status: 'pendente',
                     createdAt: new Date().toISOString()
                 });
                 
@@ -1155,23 +1438,23 @@
                 const assoc = state.associados.find(a => a.id === associadoId);
                 
                 if (isVale) {
-                    // Vale: Adiciona a valesPendentes (não subtrai do saldo ainda)
+                    // Vale: Adiciona a valesPendentes
                     const valesAtuais = assoc ? (assoc.valesPendentes || 0) : 0;
                     await window.updateDoc(assocRef, { 
                         valesPendentes: valesAtuais + valor 
                     });
                 } else {
-                    // Vistoria: Crédito imediato no saldo
-                    const saldoAtual = assoc ? assoc.saldo : 0;
+                    // Vistoria: Adiciona a vistoriasPendentes (não ao saldo ainda)
+                    const vistoriasAtuais = assoc ? (assoc.vistoriasPendentes || 0) : 0;
                     await window.updateDoc(assocRef, { 
-                        saldo: saldoAtual + valor 
+                        vistoriasPendentes: vistoriasAtuais + valor 
                     });
                 }
                 
                 document.getElementById(isVale ? 'formVale' : 'formVistoria').reset();
                 if (!isVale) document.getElementById('vistoriaValor').value = state.config.valor_vistoria;
                 
-                alert(`✅ ${isVale ? 'Vale registrado como pendente' : 'Vistoria creditada'} com sucesso!`);
+                alert(`✅ ${isVale ? 'Vale' : 'Vistoria'} registrado como pendente!`);
                 await loadLancamentos();
             } catch (error) {
                 alert('❌ Erro ao registrar lançamento');
@@ -1195,21 +1478,21 @@
                 tr.innerHTML = `
                     <td class="px-4 py-3 text-slate-400 text-sm">${data}</td>
                     <td class="px-4 py-3">
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${isVale ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'}">
-                            ${isVale ? 'VALE PENDENTE' : 'VISTORIA'}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${isVale ? 'bg-amber-500/10 text-amber-400' : 'bg-cyan-500/10 text-cyan-400'}">
+                            ${isVale ? 'VALE PENDENTE' : 'VISTORIA PENDENTE'}
                         </span>
                     </td>
                     <td class="px-4 py-3 text-white">${assoc ? assoc.nome : 'Desconhecido'}</td>
                     <td class="px-4 py-3 text-slate-400 text-sm">${lanc.descricao || '-'}</td>
-                    <td class="px-4 py-3 text-right font-mono font-bold ${isVale ? 'text-amber-400' : 'text-emerald-400'}">
-                        ${isVale ? '' : '+'} R$ ${lanc.valor.toFixed(2)}
+                    <td class="px-4 py-3 text-right font-mono font-bold ${isVale ? 'text-amber-400' : 'text-cyan-400'}">
+                        ${isVale ? '-' : '+'} R$ ${lanc.valor.toFixed(2)}
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
-        // Navios - Novo Fluxo com Filtro Inteligente
+        // Navios - Gestão Completa
         window.abrirModalNovoNavio = () => {
             document.getElementById('modalNovoNavio').classList.remove('hidden');
             document.getElementById('novoNavioNome').focus();
@@ -1231,7 +1514,7 @@
                     turnos: [],
                     totalBruto: 0,
                     totalLiquido: 0,
-                    descontosAplicados: {}, // Para guardar descontos de vale no pagamento
+                    descontosAplicados: {},
                     createdAt: new Date().toISOString()
                 });
                 
@@ -1259,7 +1542,7 @@
             
             naviosFiltrados.forEach(navio => {
                 const card = document.createElement('div');
-                card.className = 'glass-card rounded-2xl p-6 border-t-4 ' + 
+                card.className = 'glass-card rounded-2xl p-6 border-t-4 cursor-pointer hover:scale-[1.02] transition-transform ' + 
                     (navio.status === 'aberto' ? 'border-emerald-400' : 
                      navio.status === 'fechado' ? 'border-amber-400' : 'border-blue-400');
                 
@@ -1269,41 +1552,7 @@
                 const statusText = navio.status === 'aberto' ? 'Em Aberto' : 
                                   navio.status === 'fechado' ? 'Aguardando Pagamento' : 'Pago';
                 
-                // Botões baseados no status
-                let botoes = '';
-                
-                if (navio.status === 'aberto') {
-                    botoes = `
-                        <button onclick="abrirModalTurno('${navio.id}')" class="flex-1 py-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 text-sm font-medium">
-                            + Turno
-                        </button>
-                        <button onclick="fecharNavio('${navio.id}')" class="flex-1 py-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 text-sm font-medium">
-                            Fechar
-                        </button>
-                    `;
-                } else if (navio.status === 'fechado') {
-                    botoes = `
-                        <button onclick="abrirModalAutorizacao('${navio.id}')" class="flex-1 py-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20 text-sm font-medium">
-                            Autorizar Pagamento
-                        </button>
-                        <button onclick="reabrirNavio('${navio.id}')" class="px-3 py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm" title="Reabrir para edição">
-                            <i class="ph ph-arrow-counter-clockwise"></i>
-                        </button>
-                        <button onclick="verDetalhesNavio('${navio.id}')" class="px-3 py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm">
-                            <i class="ph ph-file-text"></i>
-                        </button>
-                    `;
-                } else if (navio.status === 'pago') {
-                    botoes = `
-                        <button onclick="enviarWhatsappNavio('${navio.id}')" class="flex-1 py-2 rounded-lg bg-green-500/10 text-green-400 border border-green-500/30 hover:bg-green-500/20 text-sm font-medium flex items-center justify-center gap-2">
-                            <i class="ph ph-whatsapp-logo"></i>
-                            Notificar
-                        </button>
-                        <button onclick="verDetalhesNavio('${navio.id}')" class="px-3 py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm">
-                            <i class="ph ph-file-text"></i>
-                        </button>
-                    `;
-                }
+                card.onclick = () => abrirDetalheNavio(navio.id);
                 
                 card.innerHTML = `
                     <div class="flex items-start justify-between mb-4">
@@ -1314,7 +1563,7 @@
                         <span class="status-badge ${statusClass}">${statusText}</span>
                     </div>
                     
-                    <div class="space-y-2 mb-4">
+                    <div class="space-y-2">
                         <div class="flex justify-between text-sm">
                             <span class="text-slate-400">Turnos:</span>
                             <span class="text-white font-mono">${navio.turnos ? navio.turnos.length : 0}</span>
@@ -1329,28 +1578,259 @@
                         </div>
                     </div>
                     
-                    <div class="flex flex-wrap gap-2">
-                        ${botoes}
+                    <div class="mt-4 pt-4 border-t border-slate-700/50 flex items-center justify-between text-xs text-slate-500">
+                        <span>Clique para gerenciar</span>
+                        <i class="ph ph-arrow-right"></i>
                     </div>
                 `;
                 container.appendChild(card);
             });
         }
 
-        // Turnos com Filtro Inteligente
-        window.abrirModalTurno = (navioId) => {
-            document.getElementById('turnoNavioId').value = navioId;
-            document.getElementById('modalTurno').classList.remove('hidden');
+        // View Detalhada do Navio
+        window.abrirDetalheNavio = (navioId) => {
+            const navio = state.navios.find(n => n.id === navioId);
+            if (!navio) return;
             
-            // Resetar estado
+            state.navioAtual = navio;
+            atualizarViewDetalheNavio(navioId);
+            document.getElementById('modalDetalhesNavio').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        };
+
+        function atualizarViewDetalheNavio(navioId) {
+            const navio = state.navios.find(n => n.id === navioId);
+            if (!navio) return;
+            
+            state.navioAtual = navio;
+            
+            document.getElementById('detalheNavioNome').textContent = navio.nome;
+            
+            const statusEl = document.getElementById('detalheNavioStatus');
+            statusEl.className = 'text-sm mt-1 inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase ';
+            if (navio.status === 'aberto') {
+                statusEl.classList.add('bg-emerald-500/10', 'text-emerald-400', 'border', 'border-emerald-500/20');
+                statusEl.textContent = 'Em Aberto';
+            } else if (navio.status === 'fechado') {
+                statusEl.classList.add('bg-amber-500/10', 'text-amber-400', 'border', 'border-amber-500/20');
+                statusEl.textContent = 'Aguardando Pagamento';
+            } else {
+                statusEl.classList.add('bg-blue-500/10', 'text-blue-400', 'border', 'border-blue-500/20');
+                statusEl.textContent = 'Pago';
+            }
+            
+            document.getElementById('detalheTotalBruto').textContent = `R$ ${(navio.totalBruto || 0).toFixed(2)}`;
+            document.getElementById('detalheTotalLiquido').textContent = `R$ ${(navio.totalLiquido || 0).toFixed(2)}`;
+            
+            // Calcular média por conferente único
+            const conferentesUnicos = new Set();
+            let totalTurnos = 0;
+            if (navio.turnos) {
+                navio.turnos.forEach(t => {
+                    totalTurnos++;
+                    t.conferentes.forEach(c => conferentesUnicos.add(c.id));
+                });
+            }
+            const media = conferentesUnicos.size > 0 ? (navio.totalLiquido || 0) / conferentesUnicos.size : 0;
+            document.getElementById('detalheMediaConferente').textContent = `R$ ${media.toFixed(2)}`;
+            
+            // Controle de botões
+            document.getElementById('btnAddTurno').classList.toggle('hidden', navio.status !== 'aberto');
+            document.getElementById('btnFecharNavio').classList.toggle('hidden', navio.status !== 'aberto');
+            document.getElementById('btnAutorizarPagamento').classList.toggle('hidden', navio.status !== 'fechado');
+            document.getElementById('btnExcluirNavio').classList.toggle('hidden', navio.status === 'pago'); // Não permite excluir se já foi pago
+            
+            // Renderizar turnos
+            renderTurnosNavio(navio);
+        }
+
+        function renderTurnosNavio(navio) {
+            const tbody = document.getElementById('tabelaTurnosNavio');
+            const emptyDiv = document.getElementById('emptyTurnos');
+            const colAcoes = document.getElementById('colAcoesTurno');
+            
+            tbody.innerHTML = '';
+            
+            if (!navio.turnos || navio.turnos.length === 0) {
+                emptyDiv.classList.remove('hidden');
+                colAcoes.classList.add('hidden');
+                return;
+            }
+            
+            emptyDiv.classList.add('hidden');
+            colAcoes.classList.remove('hidden');
+            
+            navio.turnos.forEach((turno, index) => {
+                const isMisto = turno.turno === '15x23';
+                let detalhesProducao = '';
+                
+                if (isMisto) {
+                    detalhesProducao = `15-19h: ${turno.detalhes.qtd15_19} un<br>19-23h: ${turno.detalhes.qtd19_23} un`;
+                } else {
+                    detalhesProducao = `${turno.detalhes.quantidade} unidades`;
+                }
+                
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/30 transition-colors';
+                tr.innerHTML = `
+                    <td class="px-6 py-4 text-slate-300">${new Date(turno.data).toLocaleDateString()}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 rounded-lg bg-slate-800 text-gold-400 text-sm font-medium border border-gold-400/20">
+                            ${turno.turno}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-slate-400 capitalize">${turno.tipoDia}</td>
+                    <td class="px-6 py-4 text-sm">${detalhesProducao}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex flex-wrap gap-1">
+                            ${turno.conferentes.map(c => `<span class="text-xs px-2 py-1 rounded bg-slate-800 text-slate-300">${c.nome.split(' ')[0]}</span>`).join('')}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-right font-mono text-slate-300">R$ ${turno.valorBruto.toFixed(2)}</td>
+                    <td class="px-6 py-4 text-right font-mono text-gold-400 font-bold">R$ ${turno.valorLiquidoPorConferente.toFixed(2)}</td>
+                    <td class="px-6 py-4 text-center">
+                        ${navio.status === 'aberto' ? `
+                            <button onclick="editarTurno(${index})" class="p-2 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 mr-1" title="Editar">
+                                <i class="ph ph-pencil"></i>
+                            </button>
+                            <button onclick="excluirTurno(${index})" class="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20" title="Excluir">
+                                <i class="ph ph-trash"></i>
+                            </button>
+                        ` : '<span class="text-slate-600">-</span>'}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        window.editarNomeNavio = () => {
+            document.getElementById('novoNomeNavioEdit').value = state.navioAtual.nome;
+            document.getElementById('modalEditarNomeNavio').classList.remove('hidden');
+        };
+
+        window.salvarNomeNavio = async () => {
+            const novoNome = document.getElementById('novoNomeNavioEdit').value.trim();
+            if (!novoNome || !state.navioAtual) return;
+            
+            try {
+                await window.updateDoc(window.doc(window.db, 'navios', state.navioAtual.id), {
+                    nome: novoNome
+                });
+                fecharModal('modalEditarNomeNavio');
+                alert('Nome atualizado!');
+            } catch (error) {
+                alert('Erro ao atualizar nome');
+            }
+        };
+
+        window.excluirNavioAtual = async () => {
+            if (!state.navioAtual) return;
+            if (!confirm(`ATENÇÃO: Deseja realmente EXCLUIR permanentemente o navio "${state.navioAtual.nome}"?\n\nEsta ação não pode ser desfeita!`)) return;
+            
+            try {
+                await window.deleteDoc(window.doc(window.db, 'navios', state.navioAtual.id));
+                fecharModal('modalDetalhesNavio');
+                alert('Navio excluído com sucesso!');
+            } catch (error) {
+                alert('Erro ao excluir navio');
+            }
+        };
+
+        window.fecharNavioAtual = async () => {
+            if (!state.navioAtual) return;
+            if (!confirm('Deseja fechar este navio para novos turnos?\n\nApós fechado, você poderá autorizar o pagamento.')) return;
+            
+            try {
+                await window.updateDoc(window.doc(window.db, 'navios', state.navioAtual.id), {
+                    status: 'fechado',
+                    dataFechamento: new Date().toISOString()
+                });
+                alert('Navio fechado com sucesso!');
+            } catch (error) {
+                alert('Erro ao fechar navio');
+            }
+        };
+
+        // Turnos - Adicionar/Editar/Excluir
+        window.abrirModalAdicionarTurno = () => {
+            document.getElementById('turnoNavioId').value = state.navioAtual.id;
+            document.getElementById('turnoEditIndex').value = -1;
+            document.getElementById('tituloModalTurno').textContent = 'Adicionar Turno';
+            document.getElementById('btnSubmitTurno').textContent = 'Adicionar Turno';
+            document.getElementById('formTurno').reset();
+            document.getElementById('turnoData').valueAsDate = new Date();
+            
             state.mostrarTodosConferentes = false;
             document.getElementById('btnMostrarTodosTurno').classList.remove('hidden');
             document.getElementById('badgeFiltroTurno').classList.add('hidden');
             
-            // Renderizar lista (será filtrada pelo onTurnoChange)
             renderListaConferentesTurno();
-            
             toggleCampos15x23();
+            
+            document.getElementById('modalTurno').classList.remove('hidden');
+        };
+
+        window.editarTurno = (index) => {
+            const turno = state.navioAtual.turnos[index];
+            if (!turno) return;
+            
+            document.getElementById('turnoNavioId').value = state.navioAtual.id;
+            document.getElementById('turnoEditIndex').value = index;
+            document.getElementById('tituloModalTurno').textContent = 'Editar Turno';
+            document.getElementById('btnSubmitTurno').textContent = 'Salvar Alterações';
+            
+            document.getElementById('turnoData').value = turno.data;
+            document.getElementById('turnoTipoDia').value = turno.tipoDia;
+            document.getElementById('turnoPeriodo').value = turno.turno;
+            
+            onTurnoChange();
+            
+            if (turno.turno === '15x23') {
+                document.getElementById('qtd15_19').value = turno.detalhes.qtd15_19;
+                document.getElementById('qtd19_23').value = turno.detalhes.qtd19_23;
+            } else {
+                document.getElementById('turnoQuantidade').value = turno.detalhes.quantidade;
+            }
+            
+            // Marcar conferentes selecionados
+            setTimeout(() => {
+                turno.conferentes.forEach(c => {
+                    const checkbox = document.querySelector(`input[name="conferenteTurno"][value="${c.id}"]`);
+                    if (checkbox) checkbox.checked = true;
+                });
+                atualizarPreviewTurno();
+            }, 100);
+            
+            document.getElementById('modalTurno').classList.remove('hidden');
+        };
+
+        window.excluirTurno = async (index) => {
+            if (!confirm('Confirma exclusão deste turno? O valor será recalculado.')) return;
+            
+            const navio = state.navioAtual;
+            const turno = navio.turnos[index];
+            
+            const novosTurnos = [...navio.turnos];
+            novosTurnos.splice(index, 1);
+            
+            // Recalcular totais
+            let totalBruto = 0;
+            let totalLiquido = 0;
+            novosTurnos.forEach(t => {
+                totalBruto += t.valorBruto;
+                totalLiquido += t.valorLiquidoPorConferente;
+            });
+            
+            try {
+                await window.updateDoc(window.doc(window.db, 'navios', navio.id), {
+                    turnos: novosTurnos,
+                    totalBruto,
+                    totalLiquido
+                });
+                alert('Turno excluído e totais recalculados!');
+            } catch (error) {
+                alert('Erro ao excluir turno');
+            }
         };
 
         function renderListaConferentesTurno(filtrarPorTurno = null) {
@@ -1360,15 +1840,14 @@
             const turnoSelecionado = filtrarPorTurno || document.getElementById('turnoPeriodo').value;
             
             state.associados.forEach(assoc => {
-                // Lógica de filtro
                 let deveMostrar = true;
                 let isMatch = false;
                 
                 if (turnoSelecionado && !state.mostrarTodosConferentes) {
                     if (assoc.turnoPadrao === turnoSelecionado) {
                         isMatch = true;
-                    } else if (assoc.turnoPadrao === 'folguista') {
-                        isMatch = true; // Folguistas aparecem em todos
+                    } else if (assoc.turnoPadrao === 'forca_supletiva') {
+                        isMatch = true; // Força supletiva aparece em todos
                     } else {
                         deveMostrar = false;
                     }
@@ -1382,8 +1861,8 @@
                     <input type="checkbox" name="conferenteTurno" value="${assoc.id}" onchange="atualizarPreviewTurno()" class="w-4 h-4 rounded border-slate-600 text-gold-400 focus:ring-gold-400 bg-slate-700">
                     <div class="flex-1">
                         <div class="text-sm font-medium text-white">${assoc.nome}</div>
-                        <div class="text-xs ${assoc.turnoPadrao === 'folguista' ? 'text-amber-400' : 'text-slate-400'}">
-                            ${assoc.turnoPadrao === 'folguista' ? 'Folguista' : 'Turno: ' + assoc.turnoPadrao}
+                        <div class="text-xs ${assoc.turnoPadrao === 'forca_supletiva' ? 'text-amber-400' : 'text-slate-400'}">
+                            ${assoc.turnoPadrao === 'forca_supletiva' ? 'Força Supletiva' : 'Turno: ' + assoc.turnoPadrao}
                         </div>
                     </div>
                 `;
@@ -1399,7 +1878,6 @@
             const turno = document.getElementById('turnoPeriodo').value;
             toggleCampos15x23();
             
-            // Aplicar filtro se tiver turno selecionado
             if (turno) {
                 state.mostrarTodosConferentes = false;
                 document.getElementById('btnMostrarTodosTurno').classList.remove('hidden');
@@ -1422,7 +1900,7 @@
                 btn.classList.add('text-gold-400');
                 document.getElementById('badgeFiltroTurno').classList.add('hidden');
             } else {
-                btn.innerHTML = '<i class="ph ph-eye"></i> Mostrar conferentes de outros turnos (Exceção)';
+                btn.innerHTML = '<i class="ph ph-eye"></i> Mostrar conferentes de outros turnos (Exceção/Força Supletiva)';
                 btn.classList.remove('text-gold-400');
                 document.getElementById('badgeFiltroTurno').classList.remove('hidden');
             }
@@ -1481,12 +1959,14 @@
             
             document.getElementById('previewBruto').textContent = `R$ ${valorBruto.toFixed(2)}`;
             document.getElementById('previewLiquido').textContent = `R$ ${valorLiquido.toFixed(2)}`;
+            document.getElementById('previewDesconto').textContent = state.config.desconto_sindical;
         };
 
         document.getElementById('formTurno').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const navioId = document.getElementById('turnoNavioId').value;
+            const editIndex = parseInt(document.getElementById('turnoEditIndex').value);
             const turno = document.getElementById('turnoPeriodo').value;
             const data = document.getElementById('turnoData').value;
             const tipoDia = document.getElementById('turnoTipoDia').value;
@@ -1524,7 +2004,7 @@
             const valorLiquidoPorConferente = (valorBruto / conferentes.length) * (1 - desconto);
             
             const novoTurno = {
-                id: Date.now().toString(),
+                id: editIndex >= 0 ? state.navioAtual.turnos[editIndex].id : Date.now().toString(),
                 data,
                 turno,
                 tipoDia,
@@ -1533,77 +2013,48 @@
                 valorLiquidoPorConferente,
                 descontoAplicado: state.config.desconto_sindical,
                 detalhes,
-                createdAt: new Date().toISOString()
+                createdAt: editIndex >= 0 ? state.navioAtual.turnos[editIndex].createdAt : new Date().toISOString()
             };
             
             try {
                 const navioRef = window.doc(window.db, 'navios', navioId);
                 const navio = state.navios.find(n => n.id === navioId);
-                const turnos = navio.turnos || [];
+                let turnos = [...(navio.turnos || [])];
                 
-                const totalBruto = (navio.totalBruto || 0) + valorBruto;
-                const totalLiquido = (navio.totalLiquido || 0) + valorLiquidoPorConferente;
+                if (editIndex >= 0) {
+                    turnos[editIndex] = novoTurno;
+                } else {
+                    turnos.push(novoTurno);
+                }
+                
+                // Recalcular totais
+                let totalBruto = 0;
+                let totalLiquido = 0;
+                turnos.forEach(t => {
+                    totalBruto += t.valorBruto;
+                    totalLiquido += t.valorLiquidoPorConferente;
+                });
                 
                 await window.updateDoc(navioRef, {
-                    turnos: [...turnos, novoTurno],
+                    turnos,
                     totalBruto,
                     totalLiquido
                 });
                 
                 fecharModal('modalTurno');
-                document.getElementById('formTurno').reset();
-                toggleCampos15x23();
                 
             } catch (error) {
-                alert('Erro ao adicionar turno');
+                alert('Erro ao salvar turno');
                 console.error(error);
             }
         });
 
-        // Fechar Navio (Fase 2)
-        window.fecharNavio = async (navioId) => {
-            if (!confirm('Ao fechar o navio, será gerado um relatório PDF. Deseja continuar?')) return;
-            
-            const navio = state.navios.find(n => n.id === navioId);
-            if (!navio) return;
-            
-            await gerarConteudoPDF(navio);
-            
-            setTimeout(async () => {
-                try {
-                    await window.updateDoc(window.doc(window.db, 'navios', navioId), {
-                        status: 'fechado',
-                        dataFechamento: new Date().toISOString()
-                    });
-                    alert('✅ Navio fechado com sucesso! O pagamento está aguardando autorização.');
-                } catch (error) {
-                    console.error(error);
-                }
-            }, 1000);
-        };
-
-        // Reabrir Navio (Nova funcionalidade)
-        window.reabrirNavio = async (navioId) => {
-            if (!confirm('Deseja reabrir este navio para edição? O status voltará para "Em Aberto" e você poderá adicionar ou remover turnos.')) return;
-            
-            try {
-                await window.updateDoc(window.doc(window.db, 'navios', navioId), {
-                    status: 'aberto',
-                    dataReabertura: new Date().toISOString()
-                });
-                alert('✅ Navio reaberto para edição!');
-            } catch (error) {
-                alert('Erro ao reabrir navio');
-                console.error(error);
-            }
-        };
-
-        // Modal de Autorização de Pagamento (Fase 3 - Nova Implementação)
-        window.abrirModalAutorizacao = (navioId) => {
-            const navio = state.navios.find(n => n.id === navioId);
+        // Autorização de Pagamento Completa
+        window.abrirModalAutorizacao = () => {
+            const navio = state.navioAtual;
             if (!navio || !navio.turnos) return;
             
-            state.navioPagamentoAtual = navio;
+            document.getElementById('nomeNavioPagamento').textContent = navio.nome;
             
             // Agrupar valores por conferente
             const conferentesMap = {};
@@ -1614,131 +2065,139 @@
                         conferentesMap[conf.id] = {
                             id: conf.id,
                             nome: conf.nome,
-                            valorReceber: 0,
+                            valorNavio: 0,
                             valesPendentes: assoc ? (assoc.valesPendentes || 0) : 0,
+                            vistoriasPendentes: assoc ? (assoc.vistoriasPendentes || 0) : 0,
                             turnos: 0
                         };
                     }
-                    conferentesMap[conf.id].valorReceber += turno.valorLiquidoPorConferente;
+                    conferentesMap[conf.id].valorNavio += turno.valorLiquidoPorConferente;
                     conferentesMap[conf.id].turnos += 1;
                 });
             });
             
-            // Renderizar lista no modal
-            const container = document.getElementById('conteudoAutorizacao');
-            container.innerHTML = '';
+            state.dadosPagamento = conferentesMap;
             
-            let totalGeral = 0;
+            // Renderizar tabela
+            const tbody = document.getElementById('tabelaAutorizacaoPagamento');
+            tbody.innerHTML = '';
             
             Object.values(conferentesMap).forEach(conf => {
-                const valorFinal = Math.max(0, conf.valorReceber - conf.valesPendentes);
-                totalGeral += valorFinal;
+                const maxDesconto = Math.min(conf.valesPendentes, conf.valorNavio);
+                const liquidoInicial = conf.valorNavio + conf.vistoriasPendentes - maxDesconto;
                 
-                const div = document.createElement('div');
-                div.className = 'p-4 rounded-xl bg-slate-800/50 border border-slate-700 space-y-3';
-                div.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <div class="font-semibold text-white text-lg">${conf.nome}</div>
-                            <div class="text-sm text-slate-400">${conf.turnos} turno(s) trabalhado(s)</div>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-sm text-slate-400">A receber do navio:</div>
-                            <div class="text-xl font-mono font-bold text-gold-400">R$ ${conf.valorReceber.toFixed(2)}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4 pt-3 border-t border-slate-700">
-                        <div>
-                            <label class="block text-xs text-amber-400 mb-1">Vales Pendentes</label>
-                            <div class="text-sm font-mono text-amber-400">R$ ${conf.valesPendentes.toFixed(2)}</div>
-                        </div>
-                        <div>
-                            <label class="block text-xs text-cyan-400 mb-1">Descontar Vale (R$)</label>
-                            <input type="number" 
-                                   class="input-field w-full px-3 py-2 rounded-lg text-white font-mono text-sm" 
-                                   value="${Math.min(conf.valesPendentes, conf.valorReceber).toFixed(2)}"
-                                   max="${conf.valorReceber}"
-                                   step="0.01"
-                                   data-assoc-id="${conf.id}"
-                                   data-valor-receber="${conf.valorReceber}"
-                                   data-vales-pendentes="${conf.valesPendentes}"
-                                   onchange="atualizarTotalPagamento()"
-                                   oninput="atualizarTotalPagamento()">
-                        </div>
-                    </div>
-                    
-                    <div class="flex justify-end pt-2">
-                        <div class="text-sm text-slate-400">Líquido a creditar: 
-                            <span class="text-emerald-400 font-mono font-bold text-lg" id="liquido-${conf.id}">
-                                R$ ${valorFinal.toFixed(2)}
-                            </span>
-                        </div>
-                    </div>
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/30';
+                tr.innerHTML = `
+                    <td class="px-4 py-3">
+                        <div class="font-medium text-white">${conf.nome}</div>
+                        <div class="text-xs text-slate-400">${conf.turnos} turno(s)</div>
+                    </td>
+                    <td class="px-4 py-3 text-right font-mono text-gold-400">R$ ${conf.valorNavio.toFixed(2)}</td>
+                    <td class="px-4 py-3 text-right font-mono text-amber-400">R$ ${conf.valesPendentes.toFixed(2)}</td>
+                    <td class="px-4 py-3 text-right font-mono text-cyan-400">R$ ${conf.vistoriasPendentes.toFixed(2)}</td>
+                    <td class="px-4 py-3 text-right">
+                        <input type="number" 
+                               class="input-field w-24 px-2 py-1 rounded text-right font-mono text-sm" 
+                               value="${maxDesconto.toFixed(2)}"
+                               max="${conf.valorNavio}"
+                               min="0"
+                               step="0.01"
+                               data-id="${conf.id}"
+                               data-campo="desconto"
+                               oninput="calcularLiquidoPagamento('${conf.id}')">
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <input type="number" 
+                               class="input-field w-24 px-2 py-1 rounded text-right font-mono text-sm" 
+                               value="${conf.vistoriasPendentes.toFixed(2)}"
+                               max="${conf.vistoriasPendentes}"
+                               min="0"
+                               step="0.01"
+                               data-id="${conf.id}"
+                               data-campo="vistoria"
+                               oninput="calcularLiquidoPagamento('${conf.id}')">
+                    </td>
+                    <td class="px-4 py-3 text-right font-mono font-bold text-emerald-400 text-lg" id="liquido-${conf.id}">
+                        R$ ${liquidoInicial.toFixed(2)}
+                    </td>
                 `;
-                container.appendChild(div);
+                tbody.appendChild(tr);
             });
             
-            document.getElementById('totalPagamento').textContent = `R$ ${totalGeral.toFixed(2)}`;
+            calcularTotalPagamento();
             document.getElementById('modalAutorizarPagamento').classList.remove('hidden');
         };
 
-        window.atualizarTotalPagamento = () => {
-            const inputs = document.querySelectorAll('#conteudoAutorizacao input[type="number"]');
-            let total = 0;
+        window.calcularLiquidoPagamento = (id) => {
+            const conf = state.dadosPagamento[id];
+            const inputDesconto = document.querySelector(`input[data-id="${id}"][data-campo="desconto"]`);
+            const inputVistoria = document.querySelector(`input[data-id="${id}"][data-campo="vistoria"]`);
             
-            inputs.forEach(input => {
-                const valorReceber = parseFloat(input.dataset.valorReceber) || 0;
-                const desconto = parseFloat(input.value) || 0;
-                const liquido = Math.max(0, valorReceber - desconto);
-                const assocId = input.dataset.assocId;
-                
-                document.getElementById(`liquido-${assocId}`).textContent = `R$ ${liquido.toFixed(2)}`;
-                total += liquido;
-            });
+            const desconto = parseFloat(inputDesconto.value) || 0;
+            const vistoria = parseFloat(inputVistoria.value) || 0;
             
-            document.getElementById('totalPagamento').textContent = `R$ ${total.toFixed(2)}`;
+            const liquido = conf.valorNavio - desconto + vistoria;
+            
+            document.getElementById(`liquido-${id}`).textContent = `R$ ${liquido.toFixed(2)}`;
+            calcularTotalPagamento();
         };
 
-        window.confirmarPagamentoComDescontos = async () => {
-            if (!state.navioPagamentoAtual) return;
+        function calcularTotalPagamento() {
+            let total = 0;
+            Object.keys(state.dadosPagamento).forEach(id => {
+                const el = document.getElementById(`liquido-${id}`);
+                if (el) {
+                    total += parseFloat(el.textContent.replace('R$', '').trim()) || 0;
+                }
+            });
+            document.getElementById('totalPagamento').textContent = `R$ ${total.toFixed(2)}`;
+        }
+
+        window.confirmarPagamentoCompleto = async () => {
+            if (!state.navioAtual || !confirm('Confirma o pagamento com os valores calculados?')) return;
             
-            const navio = state.navioPagamentoAtual;
-            const inputs = document.querySelectorAll('#conteudoAutorizacao input[type="number"]');
+            const navio = state.navioAtual;
+            const descontosAplicados = {};
             
             try {
                 const batch = window.writeBatch(window.db);
-                const descontosAplicados = {};
                 
-                inputs.forEach(input => {
-                    const assocId = input.dataset.assocId;
-                    const valorReceber = parseFloat(input.dataset.valorReceber) || 0;
-                    const valesPendentes = parseFloat(input.dataset.valesPendentes) || 0;
-                    const desconto = parseFloat(input.value) || 0;
-                    const liquido = Math.max(0, valorReceber - desconto);
+                Object.keys(state.dadosPagamento).forEach(id => {
+                    const conf = state.dadosPagamento[id];
+                    const inputDesconto = document.querySelector(`input[data-id="${id}"][data-campo="desconto"]`);
+                    const inputVistoria = document.querySelector(`input[data-id="${id}"][data-campo="vistoria"]`);
                     
-                    // Atualizar saldo do associado (adiciona líquido)
-                    const assocRef = window.doc(window.db, 'associados', assocId);
-                    const assoc = state.associados.find(a => a.id === assocId);
-                    const saldoAtual = assoc ? assoc.saldo : 0;
+                    const desconto = parseFloat(inputDesconto.value) || 0;
+                    const vistoriaPaga = parseFloat(inputVistoria.value) || 0;
+                    const liquido = conf.valorNavio - desconto + vistoriaPaga;
+                    
+                    const assocRef = window.doc(window.db, 'associados', id);
+                    const assoc = state.associados.find(a => a.id === id);
+                    
+                    // Atualizar saldos
+                    const novoSaldoReal = (assoc.saldoReal || 0) + liquido;
+                    const novosVales = Math.max(0, (assoc.valesPendentes || 0) - desconto);
+                    const novasVistorias = Math.max(0, (assoc.vistoriasPendentes || 0) - vistoriaPaga);
                     
                     batch.update(assocRef, {
-                        saldo: saldoAtual + liquido,
-                        valesPendentes: Math.max(0, valesPendentes - desconto)
+                        saldoReal: novoSaldoReal,
+                        valesPendentes: novosVales,
+                        vistoriasPendentes: novasVistorias
                     });
                     
-                    // Registrar desconto aplicado
-                    descontosAplicados[assocId] = {
-                        nome: assoc ? assoc.nome : 'Desconhecido',
-                        valorReceber: valorReceber,
+                    descontosAplicados[id] = {
+                        nome: conf.nome,
+                        valorNavio: conf.valorNavio,
                         descontoVale: desconto,
+                        vistoriaPaga: vistoriaPaga,
                         liquidoCreditado: liquido
                     };
                 });
                 
-                // Atualizar navio para pago e guardar descontos
+                // Atualizar navio
                 const navioRef = window.doc(window.db, 'navios', navio.id);
-                batch.update(navioRef, { 
+                batch.update(navioRef, {
                     status: 'pago',
                     descontosAplicados: descontosAplicados,
                     dataPagamento: new Date().toISOString()
@@ -1747,177 +2206,212 @@
                 await batch.commit();
                 
                 fecharModal('modalAutorizarPagamento');
-                alert('✅ Pagamento autorizado! Saldos creditados e vales descontados.');
-                state.navioPagamentoAtual = null;
+                fecharModal('modalDetalhesNavio');
+                alert('✅ Pagamento autorizado! Saldos atualizados, vales descontados e vistorias pagas.');
+                
             } catch (error) {
                 alert('❌ Erro ao processar pagamento');
                 console.error(error);
             }
         };
 
-        // PDF Generation
-        async function gerarConteudoPDF(navio) {
-            const container = document.getElementById('conteudoPDF');
-            
-            let turnosHTML = '';
-            if (navio.turnos && navio.turnos.length > 0) {
-                turnosHTML = navio.turnos.map(t => {
-                    const isMisto = t.turno === '15x23';
-                    const detalhes = isMisto 
-                        ? `15-19h: ${t.detalhes.qtd15_19} unid (@ R$ ${t.detalhes.taxa15_19.toFixed(2)})<br>19-23h: ${t.detalhes.qtd19_23} unid (@ R$ ${t.detalhes.taxa19_23.toFixed(2)})`
-                        : `${t.detalhes.quantidade} unidades`;
-                    
-                    return `
-                        <tr style="border-bottom: 1px solid #e2e8f0;">
-                            <td style="padding: 12px;">${new Date(t.data).toLocaleDateString()}</td>
-                            <td style="padding: 12px;"><strong>${t.turno}</strong> (${t.tipoDia})</td>
-                            <td style="padding: 12px;">${detalhes}</td>
-                            <td style="padding: 12px;">${t.conferentes.map(c => c.nome).join(', ')}</td>
-                            <td style="padding: 12px; text-align: right; font-weight: bold;">R$ ${t.valorLiquidoPorConferente.toFixed(2)}</td>
-                        </tr>
-                    `;
-                }).join('');
-            }
-            
-            container.innerHTML = `
-                <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
-                    <div style="text-align: center; border-bottom: 3px solid #f59e0b; padding-bottom: 20px; margin-bottom: 30px;">
-                        <h1 style="color: #0f172a; margin: 0; font-size: 28px;">RESUMO DE PRODUÇÃO</h1>
-                        <h2 style="color: #475569; margin: 10px 0 0 0; font-size: 20px;">${navio.nome}</h2>
-                        <p style="color: #64748b; margin: 5px 0 0 0;">Período: ${new Date(navio.dataInicio).toLocaleDateString()} a ${new Date().toLocaleDateString()}</p>
-                    </div>
-                    
-                    <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                            <span style="color: #64748b;">Total de Turnos:</span>
-                            <strong style="color: #0f172a;">${navio.turnos ? navio.turnos.length : 0}</strong>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                            <span style="color: #64748b;">Total Bruto:</span>
-                            <strong style="color: #0f172a;">R$ ${(navio.totalBruto || 0).toFixed(2)}</strong>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 18px; border-top: 2px solid #e2e8f0; padding-top: 10px; margin-top: 10px;">
-                            <span style="color: #0f172a;">Valor Líquido por Conferente:</span>
-                            <strong style="color: #d97706;">R$ ${(navio.totalLiquido || 0).toFixed(2)}</strong>
-                        </div>
-                        <div style="text-align: right; font-size: 12px; color: #94a3b8; margin-top: 5px;">
-                            *Desconto sindical de ${state.config.desconto_sindical}% aplicado
-                        </div>
-                    </div>
-                    
-                    <h3 style="color: #0f172a; margin-bottom: 15px;">Detalhamento dos Turnos</h3>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                        <thead style="background: #f1f5f9;">
-                            <tr>
-                                <th style="padding: 12px; text-align: left;">Data</th>
-                                <th style="padding: 12px; text-align: left;">Turno</th>
-                                <th style="padding: 12px; text-align: left;">Produção</th>
-                                <th style="padding: 12px; text-align: left;">Equipe</th>
-                                <th style="padding: 12px; text-align: right;">Valor/Conf.</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${turnosHTML || '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #94a3b8;">Nenhum turno registrado</td></tr>'}
-                        </tbody>
-                    </table>
-                    
-                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; color: #94a3b8; font-size: 12px;">
-                        <p>Documento gerado em ${new Date().toLocaleString()} - Sistema Gestão Sindicato Pro</p>
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('modalDetalhesNavio').classList.remove('hidden');
-        }
-
-        window.baixarPDF = () => {
-            const element = document.getElementById('conteudoPDF');
-            const opt = {
-                margin: 1,
-                filename: 'resumo-producao.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-            };
-            
-            html2pdf().set(opt).from(element).save();
-        };
-
-        window.verDetalhesNavio = (navioId) => {
-            const navio = state.navios.find(n => n.id === navioId);
-            if (navio) gerarConteudoPDF(navio);
-        };
-
-        // WhatsApp Atualizado com informações de Vale
-        window.enviarWhatsappNavio = async (navioId) => {
-            const navio = state.navios.find(n => n.id === navioId);
-            if (!navio) return;
-            
-            if (!state.config.api_url || !state.config.api_key) {
-                alert('Configure a Evolution API nas configurações primeiro!');
+        // Fechamento Semanal / Folha de Pagamento
+        window.carregarFechamentoSemanal = async () => {
+            const weekValue = document.getElementById('semanaFechamento').value;
+            if (!weekValue) {
+                alert('Selecione uma semana');
                 return;
             }
             
-            // Construir mensagem com detalhes de desconto se houver
-            let detalhesDesconto = '';
-            if (navio.descontosAplicados) {
-                detalhesDesconto = '\n\n*DETALHAMENTO POR ASSOCIADO:*\n';
-                Object.values(navio.descontosAplicados).forEach(d => {
-                    detalhesDesconto += `\n👤 ${d.nome}:\n`;
-                    detalhesDesconto += `   Bruto: R$ ${d.valorReceber.toFixed(2)}\n`;
-                    if (d.descontoVale > 0) {
-                        detalhesDesconto += `   Desconto Vale: R$ ${d.descontoVale.toFixed(2)}\n`;
-                    }
-                    detalhesDesconto += `   *Líquido: R$ ${d.liquidoCreditado.toFixed(2)}*\n`;
-                });
+            // Parse week value (format: 2024-W01)
+            const [year, week] = weekValue.split('-W');
+            const startDate = getDateOfWeek(parseInt(week), parseInt(year));
+            const endDate = new Date(startDate);
+            endDate.setDate(endDate.getDate() + 6);
+            
+            // Buscar navios pagos nesta semana
+            const naviosSnapshot = await window.getDocs(
+                window.query(window.collection(window.db, 'navios'), window.where('status', '==', 'pago'))
+            );
+            
+            const dadosFechamento = {};
+            let totalGeral = 0;
+            
+            naviosSnapshot.forEach(doc => {
+                const navio = doc.data();
+                if (!navio.dataPagamento) return;
+                
+                const dataPag = new Date(navio.dataPagamento);
+                if (dataPag >= startDate && dataPag <= endDate && navio.descontosAplicados) {
+                    Object.entries(navio.descontosAplicados).forEach(([assocId, dados]) => {
+                        if (!dadosFechamento[assocId]) {
+                            const assoc = state.associados.find(a => a.id === assocId);
+                            dadosFechamento[assocId] = {
+                                id: assocId,
+                                nome: dados.nome,
+                                telefone: assoc ? assoc.telefone : '',
+                                navios: [],
+                                totalNavios: 0,
+                                totalVistorias: 0,
+                                totalVales: 0,
+                                liquido: 0,
+                                notificado: false
+                            };
+                        }
+                        
+                        dadosFechamento[assocId].navios.push({
+                            nome: navio.nome,
+                            valor: dados.liquidoCreditado
+                        });
+                        dadosFechamento[assocId].totalNavios += dados.liquidoCreditado;
+                        dadosFechamento[assocId].totalVales += dados.descontoVale;
+                        dadosFechamento[assocId].liquido += dados.liquidoCreditado;
+                        totalGeral += dados.liquidoCreditado;
+                    });
+                }
+            });
+            
+            // Buscar vistorias avulsas pagas (se houver registro separado)
+            // Por simplicidade, estamos consolidando apenas pelos navios
+            
+            state.fechamentoSemanal = dadosFechamento;
+            
+            // Renderizar
+            const container = document.getElementById('resumoFechamento');
+            const empty = document.getElementById('emptyFechamento');
+            const tbody = document.getElementById('tabelaFechamento');
+            
+            if (Object.keys(dadosFechamento).length === 0) {
+                container.classList.add('hidden');
+                empty.classList.remove('hidden');
+                return;
             }
             
-            const mensagem = `*RESUMO DE PRODUÇÃO - SINDICATO* ⚓
-
-🚢 *Navio:* ${navio.nome}
-📅 *Período:* ${new Date(navio.dataInicio).toLocaleDateString()} a ${new Date().toLocaleDateString()}
-👥 *Turnos trabalhados:* ${navio.turnos ? navio.turnos.length : 0}
-
-💰 *RESUMO FINANCEIRO:*
-• Valor Bruto: R$ ${(navio.totalLiquido || 0).toFixed(2)}
-${navio.descontosAplicados ? '• Descontos de Vale: Conforme detalhado abaixo' : ''}
-• *VALOR LÍQUIDO CREDITADO:* R$ ${Object.values(navio.descontosAplicados || {}).reduce((acc, d) => acc + d.liquidoCreditado, 0).toFixed(2)}
-
-${navio.descontosAplicados ? detalhesDesconto : ''}
-
-_Status: PAGO E CREDITADO EM SUA CONTA_ ✓`;
+            container.classList.remove('hidden');
+            empty.classList.add('hidden');
             
-            const telefone = state.config.telefone_padrao || '';
+            document.getElementById('fechTotalPagamentos').textContent = `R$ ${totalGeral.toFixed(2)}`;
+            document.getElementById('fechTotalAssociados').textContent = Object.keys(dadosFechamento).length;
             
-            if (confirm(`Enviar notificação via WhatsApp?\n\n${mensagem.substring(0, 200)}...`)) {
+            tbody.innerHTML = '';
+            Object.values(dadosFechamento).forEach(dados => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/30';
+                tr.innerHTML = `
+                    <td class="px-4 py-3">
+                        <div class="font-medium text-white">${dados.nome}</div>
+                        <div class="text-xs text-slate-400">${dados.telefone || 'Sem telefone'}</div>
+                    </td>
+                    <td class="px-4 py-3 text-right font-mono text-gold-400">R$ ${dados.totalNavios.toFixed(2)}</td>
+                    <td class="px-4 py-3 text-right font-mono text-cyan-400">R$ ${dados.totalVistorias.toFixed(2)}</td>
+                    <td class="px-4 py-3 text-right font-mono text-amber-400">R$ ${dados.totalVales.toFixed(2)}</td>
+                    <td class="px-4 py-3 text-right font-mono font-bold text-emerald-400">R$ ${dados.liquido.toFixed(2)}</td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="px-2 py-1 rounded-full text-xs ${dados.notificado ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">
+                            ${dados.notificado ? 'Enviado' : 'Pendente'}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <button onclick="dispararWhatsAppIndividual('${dados.id}')" class="p-2 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20" title="Enviar WhatsApp">
+                            <i class="ph ph-whatsapp-logo"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+
+        function getDateOfWeek(w, y) {
+            var d = (1 + (w - 1) * 7);
+            return new Date(y, 0, d);
+        }
+
+        window.dispararWhatsAppIndividual = async (assocId) => {
+            const dados = state.fechamentoSemanal[assocId];
+            if (!dados || !dados.telefone) {
+                alert('Associado sem telefone cadastrado!');
+                return;
+            }
+            
+            if (!state.config.api_url || !state.config.api_key) {
+                alert('Configure a API do WhatsApp nas configurações!');
+                return;
+            }
+            
+            const naviosText = dados.navios.map(n => `${n.nome} (R$ ${n.valor.toFixed(2)})`).join(', ');
+            
+            const mensagem = `Olá, *${dados.nome}*. Extrato da Semana - Sindicato:
+
+🚢 Navios: ${naviosText}
+🔍 Vistorias Adicionadas: + R$ ${dados.totalVistorias.toFixed(2)}
+💸 Vales Descontados: - R$ ${dados.totalVales.toFixed(2)}
+💵 *LÍQUIDO DEPOSITADO: R$ ${dados.liquido.toFixed(2)}*`;
+            
+            try {
+                const response = await fetch(`${state.config.api_url}/message/sendText/${state.config.api_instance}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': state.config.api_key
+                    },
+                    body: JSON.stringify({
+                        number: dados.telefone,
+                        text: mensagem
+                    })
+                });
+                
+                if (response.ok) {
+                    dados.notificado = true;
+                    carregarFechamentoSemanal(); // Recarregar para atualizar status
+                    alert(`✅ Mensagem enviada para ${dados.nome}!`);
+                } else {
+                    throw new Error('Erro na API');
+                }
+            } catch (error) {
+                alert('❌ Erro ao enviar mensagem. Verifique as configurações da API.');
+            }
+        };
+
+        window.dispararTodosWhatsApp = async () => {
+            const associados = Object.values(state.fechamentoSemanal).filter(a => a.telefone && !a.notificado);
+            if (associados.length === 0) {
+                alert('Nenhum associado pendente de notificação!');
+                return;
+            }
+            
+            if (!confirm(`Deseja enviar mensagens para ${associados.length} associados?`)) return;
+            
+            let sucessos = 0;
+            let falhas = 0;
+            
+            const btn = document.getElementById('btnDispararTodos');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<div class="loading-spinner inline-block mr-2"></div> Enviando...';
+            btn.disabled = true;
+            
+            for (const dados of associados) {
                 try {
-                    const response = await fetch(`${state.config.api_url}/message/sendText`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'apikey': state.config.api_key
-                        },
-                        body: JSON.stringify({
-                            number: telefone,
-                            text: mensagem
-                        })
-                    });
-                    
-                    if (response.ok) {
-                        alert('✅ Mensagem enviada com sucesso!');
-                    } else {
-                        throw new Error('Erro na API');
-                    }
-                } catch (error) {
-                    alert('❌ Erro ao enviar via API. Verifique as configurações.');
+                    await window.dispararWhatsAppIndividual(dados.id);
+                    sucessos++;
+                    await new Promise(r => setTimeout(r, 1000)); // Delay 1s entre envios
+                } catch (e) {
+                    falhas++;
                 }
             }
+            
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            
+            alert(`Envio concluído!\n✅ Sucessos: ${sucessos}\n❌ Falhas: ${falhas}`);
         };
 
         // Dashboard
         function updateDashboard() {
-            const totalCaixa = state.associados.reduce((acc, assoc) => acc + (assoc.saldo || 0), 0);
+            const totalCaixa = state.associados.reduce((acc, assoc) => acc + (assoc.saldoReal || 0), 0);
             document.getElementById('dashTotalCaixa').textContent = `R$ ${totalCaixa.toFixed(2)}`;
+            
+            const totalVales = state.associados.reduce((acc, assoc) => acc + (assoc.valesPendentes || 0), 0);
+            document.getElementById('dashTotalVales').textContent = `R$ ${totalVales.toFixed(2)}`;
             
             document.getElementById('dashTotalAssociados').textContent = state.associados.length;
             
@@ -1925,7 +2419,7 @@ _Status: PAGO E CREDITADO EM SUA CONTA_ ✓`;
             document.getElementById('dashNaviosAbertos').textContent = naviosAbertos;
             
             const ultimos = state.navios
-                .filter(n => n.status === 'pago' || n.status === 'fechado')
+                .filter(n => n.status === 'pago')
                 .slice(0, 5);
             
             const container = document.getElementById('dashUltimosNavios');
@@ -1933,16 +2427,14 @@ _Status: PAGO E CREDITADO EM SUA CONTA_ ✓`;
                 container.innerHTML = '<div class="text-center py-8 text-slate-500">Nenhum navio finalizado</div>';
             } else {
                 container.innerHTML = ultimos.map(nav => `
-                    <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700">
+                    <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700 cursor-pointer hover:bg-slate-800 transition-colors" onclick="abrirDetalheNavio('${nav.id}')">
                         <div>
                             <div class="font-semibold text-white">${nav.nome}</div>
                             <div class="text-xs text-slate-400">${nav.turnos ? nav.turnos.length : 0} turnos</div>
                         </div>
                         <div class="text-right">
                             <div class="font-mono font-bold text-gold-400">R$ ${(nav.totalLiquido || 0).toFixed(2)}</div>
-                            <span class="text-xs px-2 py-0.5 rounded-full ${nav.status === 'pago' ? 'bg-blue-500/20 text-blue-400' : 'bg-amber-500/20 text-amber-400'}">
-                                ${nav.status === 'pago' ? 'Pago' : 'Aguardando'}
-                            </span>
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400">Pago</span>
                         </div>
                     </div>
                 `).join('');
@@ -1953,13 +2445,16 @@ _Status: PAGO E CREDITADO EM SUA CONTA_ ✓`;
                 saldosContainer.innerHTML = '<div class="text-center py-8 text-slate-500">Nenhum associado</div>';
             } else {
                 saldosContainer.innerHTML = state.associados.map(assoc => `
-                    <div class="flex items-center justify-between p-3 rounded-lg hover:bg-slate-800/50 transition-colors">
-                        <div>
-                            <span class="text-white font-medium">${assoc.nome}</span>
-                            ${assoc.valesPendentes > 0 ? `<span class="ml-2 text-xs text-amber-400">(Vale: R$ ${assoc.valesPendentes.toFixed(2)})</span>` : ''}
+                    <div class="flex items-center justify-between p-3 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer" onclick="showSection('associados')">
+                        <div class="flex-1">
+                            <div class="text-white font-medium">${assoc.nome}</div>
+                            <div class="text-xs flex gap-2 mt-1">
+                                ${assoc.valesPendentes > 0 ? `<span class="text-amber-400">Vale: R$ ${assoc.valesPendentes.toFixed(2)}</span>` : ''}
+                                ${assoc.vistoriasPendentes > 0 ? `<span class="text-cyan-400">Vist: R$ ${assoc.vistoriasPendentes.toFixed(2)}</span>` : ''}
+                            </div>
                         </div>
-                        <span class="font-mono font-bold ${assoc.saldo >= 0 ? 'text-emerald-400' : 'text-red-400'}">
-                            R$ ${(assoc.saldo || 0).toFixed(2)}
+                        <span class="font-mono font-bold ${assoc.saldoReal >= 0 ? 'text-emerald-400' : 'text-red-400'}">
+                            R$ ${(assoc.saldoReal || 0).toFixed(2)}
                         </span>
                     </div>
                 `).join('');
@@ -1969,6 +2464,10 @@ _Status: PAGO E CREDITADO EM SUA CONTA_ ✓`;
         // Utilitários
         window.fecharModal = (modalId) => {
             document.getElementById(modalId).classList.add('hidden');
+            if (modalId === 'modalDetalhesNavio') {
+                document.body.style.overflow = '';
+                state.navioAtual = null;
+            }
         };
 
         window.logout = async () => {
@@ -2001,8 +2500,8 @@ _Status: PAGO E CREDITADO EM SUA CONTA_ ✓`;
         window.addEventListener('click', (e) => {
             if (e.target.id === 'modalNovoNavio') fecharModal('modalNovoNavio');
             if (e.target.id === 'modalTurno') fecharModal('modalTurno');
-            if (e.target.id === 'modalDetalhesNavio') fecharModal('modalDetalhesNavio');
             if (e.target.id === 'modalAutorizarPagamento') fecharModal('modalAutorizarPagamento');
+            if (e.target.id === 'modalEditarNomeNavio') fecharModal('modalEditarNomeNavio');
         });
     </script>
 </body>
